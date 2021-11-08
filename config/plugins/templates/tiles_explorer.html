@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+
+{% block title %}{{ db_name }} - Tile explorer{% endblock %}
+
+{% block extra_head %}
+<script src="{{ datasette_leaflet_url }}"></script>
+<link rel="stylesheet" href="{{ datasette_leaflet_css_url }}">
+<style type="text/css">
+.tiles-metadata th {
+    font-weight: bold;
+}
+.tiles-metadata td {
+    border-top: none;
+    border-left: none;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<h1>{{ metadata.name or db_name }}</h1>
+
+<p><a href="{{ db_path }}">{{ db_name }}</a>: <a href="{{ db_path }}/tiles">tiles</a>, <a href="{{ db_path }}/metadata">metadata</a></p>
+
+<div id="explorer">
+    <div style="width: 512px"><!-- Ensure these don't wrap -->
+        <img style="vertical-align: bottom" src="/-/tiles/{{ db_name }}/{{ current_zoom }}/{{ current_x - 1 }}/{{ current_y - 1 }}.vector.pbf" alt=""
+        ><img style="vertical-align: bottom" src="/-/tiles/{{ db_name }}/{{ current_zoom }}/{{ current_x }}/{{ current_y - 1 }}.vector.pbf" alt=""
+        ><br>
+        <img src="/-/tiles/{{ db_name }}/{{ current_zoom }}/{{ current_x - 1 }}/{{ current_y }}.vector.pbf" alt=""
+        ><img src="/-/tiles/{{ db_name }}/{{ current_zoom }}/{{ current_x }}/{{ current_y }}.vector.pbf" alt=""
+        >
+    </div>
+    <p>
+        <a href="?lat={{ compass.n.lat }}&amp;lon={{ compass.n.lon }}&amp;z={{ current_zoom }}">North</a> &middot;
+        <a href="?lat={{ compass.e.lat }}&amp;lon={{ compass.e.lon }}&amp;z={{ current_zoom }}">East</a> &middot;
+        <a href="?lat={{ compass.s.lat }}&amp;lon={{ compass.s.lon }}&amp;z={{ current_zoom }}">South</a> &middot;
+        <a href="?lat={{ compass.w.lat }}&amp;lon={{ compass.w.lon }}&amp;z={{ current_zoom }}">West</a>
+        {% if can_zoom_in %}
+            &middot; <a href="?lat={{ current_latitude }}&amp;lon={{ current_longitude }}&amp;z={{ current_zoom + 1 }}">Zoom in</a>
+        {% endif %}
+        {% if can_zoom_out %}
+            &middot; <a href="?lat={{ current_latitude }}&amp;lon={{ current_longitude }}&amp;z={{ current_zoom - 1 }}">Zoom out</a>
+        {% endif %}
+    </p>
+</div>
+
+<h2>Metadata</h2>
+
+<table class="tiles-metadata">
+    {% for key, value in metadata.items() %}
+    <tr><th>{{ key }}</th><td>{{ value }}</td></tr>
+    {% endfor %}
+</table>
+
+<script type="module">
+window.DATASETTE_CLUSTER_MAP_TILE_LAYER = "/-/tiles/{{ db_name }}/{z}/{x}/{y}.vector.pbf";
+window.DATASETTE_CLUSTER_MAP_TILE_LAYER_OPTIONS = {
+    "minZoom": {{ min_zoom }},
+    "maxZoom": {{ max_zoom }}{% if attribution %},
+    "attribution": {{ attribution|safe }}{% endif %}
+};
+{% if not nojs %}
+import('{{ datasette_leaflet_url }}')
+    .then((leaflet) => {
+    let div = document.querySelector("#explorer");
+    div.innerHTML = '';
+    div.style.height = '80vh';
+    let tiles = leaflet.tileLayer(
+        window.DATASETTE_CLUSTER_MAP_TILE_LAYER,
+        window.DATASETTE_CLUSTER_MAP_TILE_LAYER_OPTIONS
+    );
+    let map = leaflet.map(div, {
+        center: leaflet.latLng({{ default_latitude }}, {{ default_longitude }}),
+        zoom: {{ default_zoom }},
+        layers: [tiles]
+    });
+    let p = document.createElement("p");
+    p.innerHTML = '<a href="?nojs=1">Explore without JavaScript</a>';
+    div.insertAdjacentElement('afterend', p);
+});
+{% endif %}
+</script>
+
+{% endblock %}

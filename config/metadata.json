@@ -1,0 +1,7 @@
+{
+    "plugins": {
+        "datasette-cors": {
+            "host_wildcards": ["*"]
+        }
+    }    
+}
