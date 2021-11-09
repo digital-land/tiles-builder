@@ -13,7 +13,6 @@ build:
 
 build-docker: docker-check $(ENTITY_DB)
 	digital-land build-datasette --data-dir $(CACHE_DIR) --ext "mbtiles" --tag $(BUILD_TAG_TILE) --options "-m $(TILE_CONFIG_DIR)metadata.json,--install=datasette-cors,--install=datasette-tiles,--plugins-dir=$(TILE_CONFIG_DIR)plugins/"
-	#datasette_builder package --data-dir $(CACHE_DIR) --ext "mbtiles" --tag $(BUILD_TAG_TILE) --options "-m $(TILE_CONFIG_DIR)metadata.json,--install=datasette-cors,--install=datasette-tiles,--plugins-dir=$(TILE_CONFIG_DIR)plugins/"
 
 push: docker-check
 	docker push $(BUILD_TAG_TILE)_digital_land
@@ -27,7 +26,7 @@ flake8:
 	flake8 --exclude 'src,.venv' .
 
 clobber::
-	rm $(CACHE_DIR)*
+	rm -rf $(CACHE_DIR)
 
 docker-check:
 ifeq (, $(shell which docker))
