@@ -8,7 +8,7 @@ TILE_CONFIG_DIR := config/
 
 all:: $(ENTITY_DB) build build-docker
 
-build:
+build: tippecanoe-check
 	python3 build_tiles.py --entity-path $(ENTITY_DB) --output-dir $(CACHE_DIR)
 
 build-docker: docker-check $(ENTITY_DB)
@@ -31,6 +31,15 @@ clobber::
 docker-check:
 ifeq (, $(shell which docker))
 	$(error "No docker in $(PATH), consider doing apt-get install docker OR brew install --cask docker")
+endif
+
+tippecanoe-check:
+ifeq (, $(shell which tippecanoe))
+	git clone https://github.com/mapbox/tippecanoe.git
+	cd tippecanoe
+	make -j
+	make install
+	cd ..
 endif
 
 #  entity index
