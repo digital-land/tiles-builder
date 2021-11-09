@@ -9,7 +9,7 @@ TILE_CONFIG_DIR := config/
 all:: $(ENTITY_DB) build build-docker
 
 build:
-	python build_tiles.py --entity-path $(ENTITY_DB) --output-dir $(CACHE_DIR)
+	python3 build_tiles.py --entity-path $(ENTITY_DB) --output-dir $(CACHE_DIR)
 
 build-docker: docker-check $(ENTITY_DB)
 	digital-land build-datasette --data-dir $(CACHE_DIR) --ext "mbtiles" --tag $(BUILD_TAG_TILE) --options "-m $(TILE_CONFIG_DIR)metadata.json,--install=datasette-cors,--install=datasette-tiles,--plugins-dir=$(TILE_CONFIG_DIR)plugins/"
