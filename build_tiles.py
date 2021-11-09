@@ -1,8 +1,9 @@
+import argparse
 import sqlite3
 import subprocess
 import multiprocessing as mp
+from pathlib import Path
 from itertools import repeat
-
 
 
 def run(command):
@@ -20,7 +21,8 @@ def run(command):
 def get_geography_datasets(entity_model_path):
     conn = sqlite3.connect(entity_model_path)
     cur = conn.cursor()
-    cur.execute("""
+    cur.execute(
+        """
     SELECT
         DISTINCT dataset
     FROM
@@ -28,29 +30,36 @@ def get_geography_datasets(entity_model_path):
     JOIN geometry
     ON entity.entity = geometry.entity
     WHERE geometry.geojson != ""
-    """)
+    """
+    )
     geography_datasets = [x[0] for x in cur]
     conn.close()
     return geography_datasets
 
-def create_dataset_geojson(entity_model_path, dataset):
+
+def get_dataset_features(entity_model_path, dataset=None):
     conn = sqlite3.connect(entity_model_path)
     json_properties = [
-        "'tippecanoe'", "json_object('layer', entity.dataset)",
-        "'entity'", "entity.entity", 
-        "'properties'", "json_patch("
-            "json_object("
-                "'name'", "entity.name",
-                "'type'", "entity.dataset",
-                "'organisation'", "oe.name", 
-                "'entity'", "entity.entity",
-                "'entry-date'", "entity.entry_date",
-                "'start-date'", "entity.start_date",
-                "'end-date'", "entity.end_date"
-            ")",
-            "IFNULL(entity.json, '{}')"
-        ")"
-        
+        "'tippecanoe'",
+        "json_object('layer', entity.dataset)",
+        "'entity'",
+        "entity.entity",
+        "'properties'",
+        "json_patch(" "json_object(" "'name'",
+        "entity.name",
+        "'type'",
+        "entity.dataset",
+        "'organisation'",
+        "oe.name",
+        "'entity'",
+        "entity.entity",
+        "'entry-date'",
+        "entity.entry_date",
+        "'start-date'",
+        "entity.start_date",
+        "'end-date'",
+        "entity.end_date" ")",
+        "IFNULL(entity.json, '{}')" ")",
     ]
     query = """
         SELECT
@@ -61,25 +70,32 @@ def create_dataset_geojson(entity_model_path, dataset):
         JOIN geometry
         ON entity.entity = geometry.entity
         LEFT JOIN entity AS oe 
-        ON entity.organisation_entity = oe.entity
-        WHERE entity.dataset == ? 
-        """.format(properties=",".join(json_properties))
+        ON entity.organisation_entity = oe.entity 
+        """.format(
+        properties=",".join(json_properties)
+    )
 
-    print(query)
     cur = conn.cursor()
-    cur.execute(query, 
-    (dataset,))
+    if dataset:
+        query += "WHERE entity.dataset == ?"
+        cur.execute(query, (dataset,))
+    else:
+        cur.execute(query)
 
     results = ",".join(x[0] for x in cur)
-    results = results.rstrip(',')
-    
+    results = results.rstrip(",")
 
-    geojson = '{"type":"FeatureCollection","features":[' + results + ']}'
+    return results
 
-    with open(f"{dataset}.geojson", "w") as f:
-         f.write(geojson)
 
-def build_dataset_tiles(dataset):
+def create_geojson_file(features, output_path, dataset):
+    geojson = '{"type":"FeatureCollection","features":[' + features + "]}"
+
+    with open(f"{output_path}/{dataset}.geojson", "w") as f:
+        f.write(geojson)
+
+
+def build_dataset_tiles(output_path, dataset):
     build_tiles_cmd = [
         "tippecanoe",
         "-z15",
@@ -88,19 +104,45 @@ def build_dataset_tiles(dataset):
         "--no-feature-limit",
         "--no-tile-size-limit",
         f"--layer={dataset}",
-        f"--output={dataset}.mbtiles",
-        f"{dataset}.geojson",
+        f"--output={output_path}/{dataset}.mbtiles",
+        f"{output_path}/{dataset}.geojson",
     ]
     run(build_tiles_cmd)
 
-def build_tiles(entity_model_path, dataset):
-    print(dataset)
-    create_dataset_geojson(entity_model_path, dataset)
-    build_dataset_tiles(dataset)
 
-    
+def build_tiles(entity_path, output_path, dataset):
+    features = get_dataset_features(entity_path, dataset)
+
+    if dataset is None:
+        dataset = "dataset_tiles"
+    create_geojson_file(features, output_path, dataset)
+    build_dataset_tiles(output_path, dataset)
+
+
 if __name__ == "__main__":
-    datasets = get_geography_datasets("entity.sqlite3")
+    parser = argparse.ArgumentParser(description="Script to build mbtiles databases")
+    parser.add_argument(
+        "--entity-path",
+        type=Path,
+        nargs=1,
+        required=False,
+        default=Path("var/cache/entity.sqlite3"),
+        help="Path to the entity database",
+    )
+    parser.add_argument(
+        "--output-dir",
+        type=Path,
+        nargs=1,
+        required=False,
+        default=Path("var/cache/"),
+        help="The numbers available to use (six must be provided)",
+    )
+    cmd_args = parser.parse_args()
+    entity_path = cmd_args.entity_path[0]
+    output_path = cmd_args.output_dir[0]
+    datasets = get_geography_datasets(entity_path)
+    datasets.append(None)
     with mp.Pool(mp.cpu_count()) as pool:
-        pool.starmap(build_tiles, zip(repeat("entity.sqlite3"), datasets))
-
+        pool.starmap(
+            build_tiles, zip(repeat(entity_path), repeat(output_path), datasets)
+        )
