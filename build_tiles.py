@@ -111,6 +111,7 @@ def build_dataset_tiles(output_path, dataset):
 
 
 def build_tiles(entity_path, output_path, dataset):
+    print(dataset)
     features = get_dataset_features(entity_path, dataset)
 
     if dataset is None:
