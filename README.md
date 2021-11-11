@@ -1,6 +1,27 @@
 # Tiles Builder
 Builds the digital-land vector tiles databases from collected geometries.
 
+Getting started
+---------------
+
+To initialise environment
+
+    make makerules
+    make init
+    
+To generate the vector tilesets
+
+    make build
+    
+To generate a datasette docker image packaged with the vector tilesets
+
+    make build-docker
+    
+To push and deploy the image
+
+    make push
+
+
 # Licence
 
 The software in this project is open source and covered by the [LICENSE](LICENSE) file.
