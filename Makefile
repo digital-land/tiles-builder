@@ -19,7 +19,6 @@ push: docker-check
 	docker push $(BUILD_TAG_TILE)_digital_land
 	aws elasticbeanstalk update-environment --application-name Datasette-tile-server-v2 --environment-name Datasettetileserverv2-env --version-label datasette-tile-server-v2-source
 
-
 lint: black-check flake8
 
 black-check:
@@ -30,6 +29,9 @@ flake8:
 
 clobber::
 	rm -rf $(CACHE_DIR)
+
+aws-build::
+	aws batch submit-job --job-name tiles-build-$(shell date '+%Y-%m-%d-%H-%M-%S') --job-queue dl-batch-queue --job-definition dl-batch-def --container-overrides '{"environment": [{"name":"BATCH_FILE_URL","value":"https://raw.githubusercontent.com/digital-land/docker-builds/main/builder_run.sh"}, {"name" : "REPOSITORY","value" : "tiles-builder"}]}'
 
 docker-check:
 ifeq (, $(shell which docker))
