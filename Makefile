@@ -1,6 +1,7 @@
 include makerules/makerules.mk
 
-BUILD_TAG_TILE := digitalland/tile_v2
+# TODO add this ECR repository to terraform
+BUILD_TAG_TILE := 955696714113.dkr.ecr.eu-west-2.amazonaws.com/tile_v2
 CACHE_DIR := var/cache/
 ENTITY_DB := var/cache/entity.sqlite3
 TILE_CONFIG_DIR := config/
@@ -16,7 +17,7 @@ build-docker: docker-check $(ENTITY_DB)
 
 push: docker-check
 	@echo $(DOCKER_TOKEN) | docker login --username digitalland --password-stdin
-	docker push $(BUILD_TAG_TILE)_digital_land
+	docker push $(BUILD_TAG_TILE)
 	aws elasticbeanstalk update-environment --application-name Datasette-tile-server-v2 --environment-name Datasettetileserverv2-env --version-label datasette-tile-server-v2-source
 
 lint: black-check flake8

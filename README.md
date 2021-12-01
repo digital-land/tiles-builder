@@ -1,7 +1,7 @@
 [![Build and deploy tile server](https://github.com/digital-land/tiles-builder/actions/workflows/build.yml/badge.svg)](https://github.com/digital-land/tiles-builder/actions/workflows/build.yml)
 
 # Tiles Builder
-Builds the digital-land vector tiles databases from collected geometries. The application is built into a 
+Builds the digital-land vector tiles databases from collected geometries. The application is built into a
 docker image containing datasette with a baked in sqlite database with spatialite extensions.
 
 The docker image is kept in dockerhub and deployed to AWS Elasticbeanstalk.
@@ -14,15 +14,15 @@ To initialise environment
 
     make makerules
     make init
-    
+
 To generate the vector tilesets
 
     make build
-    
+
 To generate a datasette docker image packaged with the vector tilesets
 
     make build-docker
-    
+
 To push and deploy the image
 
     make push
@@ -52,7 +52,7 @@ The application is running in Elasticbeanstalk in the digital land AWS dev accou
 
 2. Environment: Datasettetileserverv2-env
 
-The docker image is built and pushed to dockerhub [https://hub.docker.com/r/digitalland/tile_v2_digital_land](https://hub.docker.com/r/digitalland/tile_v2_digital_land)
+The docker image is built and pushed to [ECR](https://d955696714113.dkr.ecr.eu-west-2.amazonaws.com/tile_v2)
 
 The Elasticbeanstalk application uses this run configuration [Dockerrun.aws.json](Dockerrun.aws.json)
 
