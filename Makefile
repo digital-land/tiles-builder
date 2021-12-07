@@ -19,7 +19,8 @@ login-docker:
 	aws ecr get-login-password --region eu-west-2 | docker login --username AWS --password-stdin 955696714113.dkr.ecr.eu-west-2.amazonaws.com
 
 push: docker-check login-docker
-	docker push $(BUILD_TAG_TILE)
+	# If you're wondering where this suffix comes from: https://github.com/digital-land/digital-land-python/blob/c114044bd4210d19850b97b15ea562348010eb54/digital_land/datasette/docker.py#L26
+	docker push $(BUILD_TAG_TILE)_digital_land
 	aws elasticbeanstalk update-environment --application-name Datasette-tile-server-v2 --environment-name Datasettetileserverv2-env --version-label datasette-tile-server-v2-source
 
 lint: black-check flake8
