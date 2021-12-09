@@ -22,7 +22,7 @@ login-docker:
 
 push: docker-check login-docker
 	docker push $(PUSH_TAG_TILE)
-	aws elasticbeanstalk update-environment --application-name Datasette-tile-server-v2 --environment-name Datasettetileserverv2-env --version-label datasette-tile-server-v2-source
+	aws elasticbeanstalk update-environment --application-name Datasette-tile-server-v2 --environment-name Datasettetileserverv2-env --version-label datasette-tile-server-v2-source-configuration-2
 
 lint: black-check flake8
 
