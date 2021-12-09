@@ -1,7 +1,7 @@
 {
     "AWSEBDockerrunVersion": "1",
     "Image": {
-       "Name": "tile_v2_digital_land",
+       "Name": "955696714113.dkr.ecr.eu-west-2.amazonaws.com/tile_v2_digital_land",
        "Update": "true"
     },
     "Ports": [
