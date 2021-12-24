@@ -67,13 +67,14 @@ def get_dataset_features(entity_model_path, dataset=None):
             entity
         LEFT JOIN entity AS oe
         ON entity.organisation_entity = oe.entity
+        WHERE entity.geojson != ''
         """.format(
         properties=",".join(json_properties)
     )
 
     cur = conn.cursor()
     if dataset:
-        query += "WHERE entity.dataset == ?"
+        query += "AND entity.dataset == ?"
         cur.execute(query, (dataset,))
     else:
         cur.execute(query)
