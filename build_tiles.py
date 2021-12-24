@@ -27,9 +27,7 @@ def get_geography_datasets(entity_model_path):
         DISTINCT dataset
     FROM
         entity
-    JOIN geometry
-    ON entity.entity = geometry.entity
-    WHERE geometry.geojson != ""
+    WHERE geojson != ""
     """
     )
     geography_datasets = [x[0] for x in cur]
@@ -63,14 +61,12 @@ def get_dataset_features(entity_model_path, dataset=None):
     ]
     query = """
         SELECT
-            json_patch(geometry.geojson, 
+            json_patch(entity.geojson,
             json_object({properties}))
         FROM
             entity
-        JOIN geometry
-        ON entity.entity = geometry.entity
-        LEFT JOIN entity AS oe 
-        ON entity.organisation_entity = oe.entity 
+        LEFT JOIN entity AS oe
+        ON entity.organisation_entity = oe.entity
         """.format(
         properties=",".join(json_properties)
     )
