@@ -8,6 +8,12 @@ CACHE_DIR := var/cache/
 ENTITY_DB := var/cache/entity.sqlite3
 TILE_CONFIG_DIR := config/
 
+ifeq ($(ENVIRONMENT),)
+ENVIRONMENT=production
+endif
+ifeq ($(COLLECTION_DATASET_BUCKET_NAME),)
+COLLECTION_DATASET_BUCKET_NAME=digital-land-$(ENVIRONMENT)-collection-dataset
+endif
 
 all:: $(ENTITY_DB) build build-docker
 
@@ -55,4 +61,4 @@ endif
 #  entity index
 $(ENTITY_DB):
 	@mkdir -p $(CACHE_DIR)
-	curl -qfsL 'https://collection-dataset.s3.eu-west-2.amazonaws.com/entity-builder/dataset/entity.sqlite3' > $@
+	curl -qfsL 'https://$(COLLECTION_DATASET_BUCKET_NAME).s3.eu-west-2.amazonaws.com/entity-builder/dataset/entity.sqlite3' > $@

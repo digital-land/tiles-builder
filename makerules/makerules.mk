@@ -5,8 +5,14 @@ ifeq ($(REPOSITORY),)
 REPOSITORY=$(shell basename -s .git `git config --get remote.origin.url`)
 endif
 
+ifeq ($(ENVIRONMENT),)
+ENVIRONMENT=production
+endif
+ifeq ($(COLLECTION_DATASET_BUCKET_NAME),)
+COLLECTION_DATASET_BUCKET_NAME=digital-land-$(ENVIRONMENT)-collection-dataset
+endif
 define dataset_url
-'https://collection-dataset.s3.eu-west-2.amazonaws.com/$(2)-collection/dataset/$(1).sqlite3'
+'https://$(COLLECTION_DATASET_BUCKET_NAME).s3.eu-west-2.amazonaws.com/$(2)-collection/dataset/$(1).sqlite3'
 endef
 
 .PHONY: \
