@@ -70,12 +70,12 @@ def get_dataset_features(entity_model_path, dataset=None):
             json_patch(entity.geojson,
             json_object({properties}))
         FROM
-            entity e
+            entity
         LEFT JOIN entity AS oe
         ON entity.organisation_entity = oe.entity
         WHERE NOT EXISTS (
             SELECT * FROM old_entity
-                WHERE e.entity = old_entity.entity
+                WHERE entity.entity = old_entity.entity
         )
         AND entity.geojson != ''
         """.format(
