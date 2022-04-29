@@ -75,7 +75,7 @@ def get_dataset_features(entity_model_path, dataset=None):
         ON entity.organisation_entity = oe.entity
         WHERE NOT EXISTS (
             SELECT * FROM old_entity
-                WHERE entity.entity = old_entity.entity
+                WHERE entity.entity = old_entity.old_entity
         )
         AND entity.geojson != ''
         """.format(
