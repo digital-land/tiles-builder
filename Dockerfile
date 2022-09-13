@@ -3,7 +3,6 @@ FROM ${APP_IMAGE}
 
 RUN pip uninstall -y uvicorn
 RUN pip install uvicorn[standard] gunicorn environs
-RUN pip install -e git+https://github.com/digital-land/datasette@allow-bidirectional-joins#egg=datasette
 
 EXPOSE 5000
 
