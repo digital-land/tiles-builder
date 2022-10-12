@@ -28,7 +28,7 @@ build-docker: docker-check $(ENTITY_DB)
 	docker build -t $(BUILD_TAG):latest --build-arg APP_IMAGE=$(BUILD_TAG):temp .
 
 login-docker:
-	aws ecr-public get-login-password --region us-east-1 | docker login --username AWS --password-stdin public.ecr.aws/t4s4p5s3
+	aws ecr get-login-password --region eu-west-2 | docker login --username AWS --password-stdin 955696714113.dkr.ecr.eu-west-2.amazonaws.com
 
 push: docker-check login-docker
 	docker push $(BUILD_TAG):latest
