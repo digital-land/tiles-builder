@@ -24,8 +24,7 @@ build: tippecanoe
 	python3 build_tiles.py --entity-path $(ENTITY_DB) --output-dir $(CACHE_DIR)
 
 build-docker: docker-check $(ENTITY_DB)
-	datasette package --port 5000 --extra-options="--setting sql_time_limit_ms 8000" --spatialite -m $(CONFIG_DIR)metadata.json --install=datasette-cors --install=datasette-tiles --plugins-dir=$(CONFIG_DIR)plugins/ $(CACHE_DIR)*.mbtiles --tag $(BUILD_TAG):temp
-	docker build -t $(BUILD_TAG):latest --build-arg APP_IMAGE=$(BUILD_TAG):temp .
+	datasette package --port 5000 --extra-options="--setting sql_time_limit_ms 8000" --spatialite -m $(CONFIG_DIR)metadata.json --install=datasette-cors --install=datasette-tiles --plugins-dir=$(CONFIG_DIR)plugins/ $(CACHE_DIR)*.mbtiles --tag $(BUILD_TAG):latest
 
 login-docker:
 	aws ecr get-login-password --region eu-west-2 | docker login --username AWS --password-stdin 955696714113.dkr.ecr.eu-west-2.amazonaws.com
