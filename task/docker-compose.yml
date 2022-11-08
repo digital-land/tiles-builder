@@ -3,5 +3,5 @@ services:
   tiles-builder:
     build: .
     volumes:
-      - ../files/datasets:/mnt/datasets
+      - ../files/entity.sqlite3:/task/entity.sqlite3
       - ../files/tiles:/mnt/tiles
