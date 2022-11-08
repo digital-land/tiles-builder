@@ -3,9 +3,7 @@ import os
 from select import select
 import sqlite3
 import subprocess
-import multiprocessing as mp
 from pathlib import Path
-from itertools import repeat
 from contextlib import contextmanager
 
 LOG_INIT = f"{os.getenv('EVENT_ID')}:"
@@ -19,15 +17,19 @@ def pipe():
     os.close(w)
 
 
-def run(command):
+def run(command, pre_log):
     with pipe() as (r, w):
-        with subprocess.Popen(command, shell=True, stdout=w, stderr=w) as p:
-            while p.poll() is None:
-                # get read buffer from the output when ready without blocking
+        with subprocess.Popen(command, shell=True, stdout=w, stderr=w) as proc:
+            while proc.poll() is None:
+                output = ""
                 while len(select([r], [], [], 0)[0]) > 0:
-                    # read 1024 bytes from the buffer
                     buf = os.read(r, 1024)
-                    print(f"{LOG_INIT} {buf.decode('utf-8')}", end='')
+                    output += buf.decode('utf-8')
+
+                if output != '' and str.strip(output) != '':
+                    print(f"{pre_log} {output}", end='')
+
+            return proc
 
 
 def get_geography_datasets(entity_model_path):
@@ -109,18 +111,20 @@ def get_dataset_features(entity_model_path, dataset=None):
 
 def create_geojson_file(features, output_path, dataset):
     geojson = '{"type":"FeatureCollection","features":[' + features + "]}"
-    print(f"{LOG_INIT} Creating geojson for {dataset}")
-
     with open(f"{output_path}/{dataset}.geojson", "w") as f:
         f.write(geojson)
+    print(f"{LOG_INIT} [{dataset}] Created geojson")
 
 
 def build_dataset_tiles(output_path, dataset):
-    print(f"{LOG_INIT} Building dataset files for {dataset}")
     build_tiles_cmd = f"tippecanoe --no-progress-indicator --force -z15 -Z4 -r1 --no-feature-limit " \
-                      f"--no-tile-size-limit --layer={dataset} --output={output_path}/{dataset}.mbti" \
-                      f"les {output_path}/{dataset}.geojson "
-    run(build_tiles_cmd)
+                      f"--no-tile-size-limit --layer={dataset} --output={output_path}/{dataset}.mbtiles " \
+                      f"{output_path}/{dataset}.geojson "
+    proc = run(build_tiles_cmd, f"{LOG_INIT} [{dataset}]")
+    if proc.returncode != 0:
+        print(f"{LOG_INIT} [{dataset}] Failed to create tiles")
+    else:
+        print(f"{LOG_INIT} [{dataset}] Created tiles")
 
 
 def build_tiles(entity_path, output_path, dataset):
@@ -155,6 +159,7 @@ if __name__ == "__main__":
     entity_path = cmd_args.entity_path[0]
     output_path = cmd_args.output_dir[0]
     datasets = get_geography_datasets(entity_path)
+    print(f"{LOG_INIT} Found datasets {datasets}")
     datasets.append(None)
 
     for d in datasets:
