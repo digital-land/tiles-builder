@@ -4,13 +4,13 @@ on:
   push:
     branches:
       - feat/new-infrastructure
-    paths:
-      - task/
+#    paths:
+#      - task/
   pull_request:
     branches:
       - feat/new-infrastructure
-    paths:
-      - task/
+#    paths:
+#      - task/
 
 jobs:
   deploy-to-ecs:
