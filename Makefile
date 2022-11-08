@@ -1,6 +1,6 @@
 .PHONY: start init
 
-./files/datasets:
+./files/entity.sqlite3:
 	@mkdir -p ./files
 	@curl -o ./files/entity.sqlite3 https://files.temporary.digital-land.info/entity-builder/dataset/entity.sqlite3
 

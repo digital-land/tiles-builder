@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-echo "task running with env vars S3_BUCKET = $S3_BUCKET and S3_KEY = $S3_KEY"
+echo "$EVENT_ID: task running with env vars S3_BUCKET = $S3_BUCKET and S3_KEY = $S3_KEY"
 
 DATABASE=${S3_KEY##*/}
 DATABASE_NAME=${DATABASE%.*}
@@ -12,6 +12,9 @@ if ! [ -f $DATABASE_NAME.sqlite3 ]; then
   else
     echo "$EVENT_ID: failed to download from $COLLECTION_DATA_URL/$S3_KEY"
   fi
+  echo "$EVENT_ID: finished downloading from $COLLECTION_DATA_URL/$S3_KEY"
+else
+  echo "$EVENT_ID: did not need to download files"
 fi
 
 echo "$EVENT_ID: building tiles"

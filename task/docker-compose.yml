@@ -2,6 +2,10 @@ version: "3.9"
 services:
   tiles-builder:
     build: .
+    environment:
+      S3_BUCKET: temporary-collection-data
+      S3_KEY: entity-builder/dataset/entity.sqlite3
+      EVENT_ID: test-event
     volumes:
       - ../files/entity.sqlite3:/task/entity.sqlite3
       - ../files/tiles:/mnt/tiles
