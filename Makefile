@@ -8,7 +8,7 @@
 	@mkdir -p ./files/tiles
 	@cd task && docker-compose up --build
 
-init: ./files/datasets ./files/tiles
+init: ./files/entity.sqlite3 ./files/tiles
 
 start: init
 	@cd application && docker-compose up --build
