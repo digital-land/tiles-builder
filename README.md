@@ -1,5 +1,5 @@
 [![Tile Server](https://github.com/digital-land/tiles-builder/actions/workflows/deploy-application.yml/badge.svg)](https://github.com/digital-land/tiles-builder/actions/workflows/deploy-application.yml)
-[![Tile Builder](https://github.com/digital-land/tiles-builder/actions/workflows/deploy-application.yml/badge.svg)](https://github.com/digital-land/tiles-builder/actions/workflows/deploy-application.yml)
+[![Tile Builder](https://github.com/digital-land/tiles-builder/actions/workflows/deploy-task.yml/badge.svg)](https://github.com/digital-land/tiles-builder/actions/workflows/deploy-task.yml)
 
 # Tiles Server
 
