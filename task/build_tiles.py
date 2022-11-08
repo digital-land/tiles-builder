@@ -117,7 +117,9 @@ def create_geojson_file(features, output_path, dataset):
 
 def build_dataset_tiles(output_path, dataset):
     print(f"{LOG_INIT} Building dataset files for {dataset}")
-    build_tiles_cmd = f"tippecanoe --force -z15 -Z4 -r1 --no-feature-limit --no-tile-size-limit --layer={dataset} --output={output_path}/{dataset}.mbtiles {output_path}/{dataset}.geojson"
+    build_tiles_cmd = f"tippecanoe --no-progress-indicator --force -z15 -Z4 -r1 --no-feature-limit " \
+                      f"--no-tile-size-limit --layer={dataset} --output={output_path}/{dataset}.mbti" \
+                      f"les {output_path}/{dataset}.geojson "
     run(build_tiles_cmd)
 
 
