@@ -27,7 +27,7 @@ def run(command, pre_log):
                     output += buf.decode('utf-8')
 
                 if output != '' and str.strip(output) != '':
-                    print(f"{pre_log} {output}", end='')
+                    print(f"{pre_log} {output}", end='', flush=True)
 
             return proc
 
@@ -113,18 +113,18 @@ def create_geojson_file(features, output_path, dataset):
     geojson = '{"type":"FeatureCollection","features":[' + features + "]}"
     with open(f"{output_path}/{dataset}.geojson", "w") as f:
         f.write(geojson)
-    print(f"{LOG_INIT} [{dataset}] Created geojson")
+    print(f"{LOG_INIT} [{dataset}] created geojson", flush=True)
 
 
 def build_dataset_tiles(output_path, dataset):
-    build_tiles_cmd = f"tippecanoe --no-progress-indicator --force -z15 -Z4 -r1 --no-feature-limit " \
+    build_tiles_cmd = f"tippecanoe --no-progress-indicator -z15 -Z4 -r1 --no-feature-limit " \
                       f"--no-tile-size-limit --layer={dataset} --output={output_path}/{dataset}.mbtiles " \
                       f"{output_path}/{dataset}.geojson "
     proc = run(build_tiles_cmd, f"{LOG_INIT} [{dataset}]")
     if proc.returncode != 0:
-        print(f"{LOG_INIT} [{dataset}] Failed to create tiles")
+        print(f"{LOG_INIT} [{dataset}] failed to create tiles", flush=True)
     else:
-        print(f"{LOG_INIT} [{dataset}] Created tiles")
+        print(f"{LOG_INIT} [{dataset}] created tiles", flush=True)
 
 
 def build_tiles(entity_path, output_path, dataset):
@@ -159,9 +159,9 @@ if __name__ == "__main__":
     entity_path = cmd_args.entity_path[0]
     output_path = cmd_args.output_dir[0]
     datasets = get_geography_datasets(entity_path)
-    print(f"{LOG_INIT} Found datasets {datasets}")
+    print(f"{LOG_INIT} found datasets: {datasets}", flush=True)
     datasets.append(None)
 
     for d in datasets:
-        print(f"{LOG_INIT} {d}")
+        print(f"{LOG_INIT} [{d}] started processing", flush=True)
         build_tiles(entity_path, output_path, d)

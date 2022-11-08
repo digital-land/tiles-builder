@@ -17,7 +17,15 @@ else
   echo "$EVENT_ID: did not need to download files"
 fi
 
+mkdir -p /mnt/tiles/temporary
 echo "$EVENT_ID: building tiles"
-python3 build_tiles.py --entity-path entity.sqlite3 --output-dir /mnt/tiles && echo "$EVENT_ID: tiles built successfully"
+python3 build_tiles.py --entity-path entity.sqlite3 --output-dir /mnt/tiles/temporary && echo "$EVENT_ID: tiles built successfully"
+echo "$EVENT_ID: finished building tiles"
+rm -rf /mnt/tiles/*.mbtiles
+rm -rf /mnt/tiles/*.geojson
 
+mv /mnt/tiles/temporary/* /mnt/tiles
+rm -rf /mnt/tiles/temporary
+
+echo "$EVENT_ID: tile files swapped out"
 date > /mnt/tiles/updated

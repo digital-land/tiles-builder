@@ -31,14 +31,3 @@ while [[ 1=1 ]]; do
   fi
   sleep 10
 done
-
-#		&& datasette package \
-#			--port 5000 \
-#			--extra-options="--setting sql_time_limit_ms 8000" \
-#			--spatialite \
-#			-m ./config/metadata.json \
-#			--install=datasette-cors \
-#			--install=datasette-tiles \
-#			--plugins-dir=./config/plugins/ \
-#			/mnt/tiles/*.mbtiles \
-#			--tag datasette-tiles-server:latest
