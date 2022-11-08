@@ -1,0 +1,7 @@
+version: "3.9"
+services:
+  tiles-builder:
+    build: .
+    volumes:
+      - ../files/datasets:/mnt/datasets
+      - ../files/tiles:/mnt/tiles
