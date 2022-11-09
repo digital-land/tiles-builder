@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 
 DATASETTE_PID=0
-ls
 
 start_datasette() {
   DATASETTE_SERVE_ARGS="-h 0.0.0.0 -p $PORT -m ./metadata.json --setting sql_time_limit_ms 8000 --nolock "
