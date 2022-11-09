@@ -1,6 +1,16 @@
 #!/usr/bin/env bash
 
 echo "$EVENT_ID: task running with env vars S3_BUCKET = $S3_BUCKET and S3_KEY = $S3_KEY"
+echo "$EVENT_ID: checking lock"
+
+if [ -f /mnt/tiles/lock ]; then
+  echo "$EVENT_ID: lock exists ($(cat /mnt/tiles/lock))"
+  exit 1
+else
+  echo "$EVENT_ID: no current lock"
+  date > /mnt/tiles/lock
+fi
+
 
 DATABASE=${S3_KEY##*/}
 DATABASE_NAME=${DATABASE%.*}
@@ -29,3 +39,4 @@ rm -rf /mnt/tiles/temporary
 
 echo "$EVENT_ID: tile files swapped out"
 date > /mnt/tiles/updated
+rm /mnt/tiles/lock
