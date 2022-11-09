@@ -1,19 +1,23 @@
 #!/usr/bin/env bash
 
 echo "$EVENT_ID: task running with env vars S3_BUCKET = $S3_BUCKET and S3_KEY = $S3_KEY"
-echo "$EVENT_ID: checking lock"
 
+DATABASE=${S3_KEY##*/}
+DATABASE_NAME=${DATABASE%.*}
+
+if [[ $DATABASE_NAME != "entity" ]]; then
+  echo "$EVENT_ID: wrong database, skipping"
+  exit 1
+fi
+
+echo "$EVENT_ID: checking lock"
 if [ -f /mnt/tiles/lock ]; then
-  echo "$EVENT_ID: lock exists ($(cat /mnt/tiles/lock))"
+  echo "$EVENT_ID: lock exists ($(cat /mnt/tiles/lock)) backing off"
   exit 1
 else
   echo "$EVENT_ID: no current lock"
   date > /mnt/tiles/lock
 fi
-
-
-DATABASE=${S3_KEY##*/}
-DATABASE_NAME=${DATABASE%.*}
 
 if ! [ -f $DATABASE_NAME.sqlite3 ]; then
   echo "$EVENT_ID: attempting download from $COLLECTION_DATA_URL/$S3_KEY"
