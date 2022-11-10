@@ -133,6 +133,8 @@ def build_tiles(entity_path, output_path, dataset):
     if dataset is None:
         dataset = "dataset_tiles"
 
+    print(f"{LOG_INIT} [{dataset}] started processing", flush=True)
+
     create_geojson_file(features, output_path, dataset)
     build_dataset_tiles(output_path, dataset)
 
@@ -163,5 +165,4 @@ if __name__ == "__main__":
     datasets.append(None)
 
     for d in datasets:
-        print(f"{LOG_INIT} [{d}] started processing", flush=True)
         build_tiles(entity_path, output_path, d)
