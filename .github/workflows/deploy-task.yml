@@ -26,7 +26,7 @@ jobs:
           script: |
             const {data: {environments}} =
               await github.request(`GET /repos/${process.env.GITHUB_REPOSITORY}/environments`);
-            return environments.map(e => e.name)
+            return environments.map(e => e.name).filter(e => e.indexOf('-task') != -1)
 
   deploy-:
     runs-on: ubuntu-latest
