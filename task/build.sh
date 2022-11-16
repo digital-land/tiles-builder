@@ -21,15 +21,19 @@ if [ -f "/mnt/tiles/lock-$DATABASE_NAME" ]; then
   fi
 else
   echo "$EVENT_ID: no current lock-$DATABASE_NAME"
-  date +%s > "/mnt/tiles/lock-$DATABASE_NAME"
+  date +%s >"/mnt/tiles/lock-$DATABASE_NAME"
 fi
 
 if ! [ -f "$DATABASE_NAME.sqlite3" ]; then
   echo "$EVENT_ID: attempting download from s3://$S3_BUCKET/$S3_KEY"
-  aws s3api get-object --bucket "$S3_BUCKET" --key "$S3_KEY" "$DATABASE_NAME.sqlite3" > /dev/null || \
-    echo "$EVENT_ID: failed to download from s3://$S3_BUCKET/$S3_KEY" && exit 1
+  aws s3api get-object --bucket "$S3_BUCKET" --key "$S3_KEY" "$DATABASE_NAME.sqlite3" >/dev/null
 
-  echo "$EVENT_ID: finished downloading from s3://$S3_BUCKET/$S3_KEY"
+  if ! [ -f "$DATABASE_NAME.sqlite3" ]; then
+    echo "$EVENT_ID: failed to download from s3://$S3_BUCKET/$S3_KEY"
+    exit 1
+  else
+    echo "$EVENT_ID: finished downloading from s3://$S3_BUCKET/$S3_KEY"
+  fi
 else
   echo "$EVENT_ID: did not need to download files"
 fi
@@ -45,5 +49,5 @@ mv /mnt/tiles/temporary/* /mnt/tiles
 rm -rf /mnt/tiles/temporary
 
 echo "$EVENT_ID: tile files swapped out"
-date +%s > /mnt/tiles/updated
+date +%s >/mnt/tiles/updated
 rm "/mnt/tiles/lock-$DATABASE_NAME"
