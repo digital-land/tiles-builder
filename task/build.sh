@@ -11,12 +11,17 @@ if [[ $DATABASE_NAME != "entity" ]]; then
 fi
 
 echo "$EVENT_ID: checking lock"
-if [ -f /mnt/tiles/lock ]; then
-  echo "$EVENT_ID: lock exists ($(cat /mnt/tiles/lock)) backing off"
-  exit 1
+
+if [ -f "/mnt/tiles/lock-$DATABASE_NAME" ]; then
+  if [[ "$(echo "$(date +%s) - $(cat "/mnt/tiles/lock-$DATABASE_NAME") - 3600" | bc)" -ge "0" ]]; then
+    echo "$EVENT_ID: lock-$DATABASE_NAME exists ($(cat "/mnt/tiles/lock-$DATABASE_NAME")) but is stale, resetting"
+  else
+    echo "$EVENT_ID: lock-$DATABASE_NAME exists ($(cat "/mnt/tiles/lock-$DATABASE_NAME")) and is not stale, exiting"
+    exit 1
+  fi
 else
-  echo "$EVENT_ID: no current lock"
-  date > /mnt/tiles/lock
+  echo "$EVENT_ID: no current lock-$DATABASE_NAME"
+  date +%s > "/mnt/tiles/lock-$DATABASE_NAME"
 fi
 
 if ! [ -f "$DATABASE_NAME.sqlite3" ]; then
@@ -40,5 +45,5 @@ mv /mnt/tiles/temporary/* /mnt/tiles
 rm -rf /mnt/tiles/temporary
 
 echo "$EVENT_ID: tile files swapped out"
-date > /mnt/tiles/updated
-rm /mnt/tiles/lock
+date +%s > /mnt/tiles/updated
+rm "/mnt/tiles/lock-$DATABASE_NAME"
