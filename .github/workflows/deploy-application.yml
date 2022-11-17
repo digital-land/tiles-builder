@@ -11,6 +11,11 @@ on:
       - feat/new-infrastructure
 #    paths:
 #      - application/
+  workflow_dispatch:
+    inputs:
+      environment:
+        type: environment
+        description: The environment to deploy to (select an -application environment).
 
 jobs:
   detect-environments:
@@ -24,6 +29,7 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           result-encoding: json
           script: |
+            if (context.payload?.inputs?.environment) return [context.payload?.inputs?.environment];
             const {data: {environments}} =
               await github.request(`GET /repos/${process.env.GITHUB_REPOSITORY}/environments`);
             return environments.map(e => e.name).filter(e => e.indexOf('-application') != -1)
