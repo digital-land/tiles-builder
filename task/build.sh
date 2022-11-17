@@ -24,6 +24,9 @@ else
   date +%s >"/mnt/tiles/lock-$DATABASE_NAME"
 fi
 
+echo "$EVENT_ID: removing existing temporary tiles"
+rm -rf /mnt/tiles/temporary
+
 if ! [ -f "$DATABASE_NAME.sqlite3" ]; then
   echo "$EVENT_ID: attempting download from s3://$S3_BUCKET/$S3_KEY"
   aws s3api get-object --bucket "$S3_BUCKET" --key "$S3_KEY" "$DATABASE_NAME.sqlite3" >/dev/null
