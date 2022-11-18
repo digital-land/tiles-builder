@@ -7,8 +7,10 @@ The tiles server consists of two separate deployable images: the server itself a
 
 ## Running locally
 
-To run the service locally run `make start` it is advised that you limit the number of other tasks running and have a 
-minimum of 6GB free space for the required files.
+To run the service locally run `make application` while authenticated with `aws-vault`. It is advised that you limit the
+number of other tasks running and have a minimum of 6GB free space for the required files.
+
+To reset the current tiles stored, run `make clean` before running `make application` to start from a clean slate.
 
 ## Building & Deployment
 

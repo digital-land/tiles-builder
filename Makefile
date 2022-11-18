@@ -1,14 +1,20 @@
 .PHONY: start init
 
-./files/entity.sqlite3:
-	@mkdir -p ./files
-	@curl -o ./files/entity.sqlite3 https://files.temporary.digital-land.info/entity-builder/dataset/entity.sqlite3
-
-./files/tiles:
+./files:
 	@mkdir -p ./files/tiles
-	@cd task && docker-compose up --build
+	cd task && UID=$${UID} \
+			   GID=$${GID} \
+			   AWS_ACCESS_KEY_ID="$$AWS_ACCESS_KEY_ID" \
+			   AWS_SECRET_ACCESS_KEY="$$AWS_SECRET_ACCESS_KEY" \
+			   AWS_SESSION_TOKEN="$$AWS_SESSION_TOKEN" \
+			   AWS_SECURITY_TOKEN="$$AWS_SECURITY_TOKEN" \
+			   AWS_SESSION_EXPIRATION="$$AWS_SESSION_EXPIRATION" \
+			   docker-compose up --build
 
-init: ./files/entity.sqlite3 ./files/tiles
+task: ./files
 
-start: init
+application: task
 	@cd application && docker-compose up --build
+
+clean:
+	@rm -rf ./files

@@ -2,10 +2,17 @@ version: "3.9"
 services:
   tiles-builder:
     build: .
+    user: "${UID}:${GID}"
     environment:
-      S3_BUCKET: temporary-collection-data
+      S3_BUCKET: production-collection-data
       S3_KEY: entity-builder/dataset/entity.sqlite3
       EVENT_ID: test-event
+      AWS_REGION: eu-west-2
+      AWS_DEFAULT_REGION: eu-west-2
+      AWS_ACCESS_KEY_ID: "${AWS_ACCESS_KEY_ID}"
+      AWS_SECRET_ACCESS_KEY: "${AWS_SECRET_ACCESS_KEY}"
+      AWS_SESSION_TOKEN: "${AWS_SESSION_TOKEN}"
+      AWS_SECURITY_TOKEN: "${AWS_SECURITY_TOKEN}"
+      AWS_SESSION_EXPIRATION: "${AWS_SESSION_EXPIRATION}"
     volumes:
-      - ../files/entity.sqlite3:/task/entity.sqlite3
       - ../files/tiles:/mnt/tiles
