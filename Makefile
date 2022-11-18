@@ -1,4 +1,4 @@
-.PHONY: start init
+.PHONY: application task
 
 ./files:
 	@mkdir -p ./files/tiles
