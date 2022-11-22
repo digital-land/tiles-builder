@@ -2,15 +2,8 @@ name: Deploy Task
 
 on:
   push:
-    branches:
-      - feat/new-infrastructure
-#    paths:
-#      - task/
-  pull_request:
-    branches:
-      - feat/new-infrastructure
-#    paths:
-#      - task/
+    branches: [main]
+    paths: [application/]
   workflow_dispatch:
     inputs:
       environment:

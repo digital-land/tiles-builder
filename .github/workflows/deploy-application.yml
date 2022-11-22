@@ -2,15 +2,8 @@ name: Deploy Application
 
 on:
   push:
-    branches:
-      - feat/new-infrastructure
-#    paths:
-#      - application/
-  pull_request:
-    branches:
-      - feat/new-infrastructure
-#    paths:
-#      - application/
+    branches: [main]
+    paths: [application/]
   workflow_dispatch:
     inputs:
       environment:
