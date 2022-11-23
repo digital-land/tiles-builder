@@ -2,8 +2,10 @@ name: Deploy Application
 
 on:
   push:
-    branches: [main]
-    paths: ['application/**']
+    branches: [ main ]
+    paths:
+      - 'application/**'
+      - '.github/workflows/deploy-application.yml'
   workflow_dispatch:
     inputs:
       environment:

@@ -2,8 +2,10 @@ name: Deploy Task
 
 on:
   push:
-    branches: [main]
-    paths: ['task/**']
+    branches: [ main ]
+    paths:
+      - 'task/**'
+      - '.github/workflows/deploy-task.yml'
   workflow_dispatch:
     inputs:
       environment:
