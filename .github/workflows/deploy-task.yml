@@ -3,7 +3,7 @@ name: Deploy Task
 on:
   push:
     branches: [main]
-    paths: [application/]
+    paths: ['task/**']
   workflow_dispatch:
     inputs:
       environment:
