@@ -1,0 +1,8 @@
+version: "3.9"
+services:
+  tiles-server:
+    build: .
+    ports:
+      - "5000:5000"
+    volumes:
+      - ../files/tiles:/mnt/tiles
