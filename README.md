@@ -7,10 +7,26 @@ The tiles server consists of two separate deployable images: the server itself a
 
 ## Running locally
 
+### Prerequisites
+
+this task relies on tipcannoe being installed. this can be installed easily and the commands can be found in their github repo
+
+### Running locally with aws credentials and docker
+
 To run the service locally run `make application` while authenticated with `aws-vault`. It is advised that you limit the
 number of other tasks running and have a minimum of 6GB free space for the required files.
 
 To reset the current tiles stored, run `make clean` before running `make application` to start from a clean slate.
+
+### Running tiles building locally withouot aws account
+
+The above is helpful when running with aws credentials and it will launch the datasette app. I have created a temporary solution for producing the tiles locally. This is mainly for on going work and should be reconsidered in the future.
+
+The script can be ran by changing into the task directory and running
+
+```
+./build_local.sh
+```
 
 ## Building & Deployment
 
