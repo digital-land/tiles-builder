@@ -18,7 +18,7 @@ number of other tasks running and have a minimum of 6GB free space for the requi
 
 To reset the current tiles stored, run `make clean` before running `make application` to start from a clean slate.
 
-### Running tiles building locally withouot aws account
+### Running tiles building locally without aws credentials
 
 The above is helpful when running with aws credentials and it will launch the datasette app. I have created a temporary solution for producing the tiles locally. This is mainly for on going work and should be reconsidered in the future.
 
