@@ -1,7 +1,12 @@
 import argparse
+import json
 import os
+
+import geojson
+import shapely.wkt
 from select import select
 import sqlite3
+from sqlite3 import Error as SQL_Error
 import subprocess
 from pathlib import Path
 from contextlib import contextmanager
@@ -33,20 +38,84 @@ def run(command, pre_log):
 
 
 def get_geography_datasets(entity_model_path):
+    if not Path(entity_model_path).is_file():
+        return None
+
     conn = sqlite3.connect(entity_model_path)
     cur = conn.cursor()
     cur.execute(
         """
-    SELECT
-        DISTINCT dataset
-    FROM
-        entity
-    WHERE geojson != ""
-    """
+        SELECT
+            DISTINCT dataset
+        FROM
+            entity
+        WHERE
+            geojson == ''
+        AND
+            (geometry != '') OR (point != '')
+        """
     )
     geography_datasets = [x[0] for x in cur]
-    conn.close()
     return geography_datasets
+
+
+def create_geojson_from_wkt(entity_model_path):
+    no_errors = False
+    print(f"{LOG_INIT} started creating geojson for {entity_model_path}", flush=True)
+    conn = sqlite3.connect(entity_model_path)
+
+    try:
+        cur = conn.cursor()
+        cur.execute(
+            """
+            SELECT      entity,
+                        point,
+                        geometry
+            FROM        entity
+            WHERE       geometry != ''
+            OR          point != ''
+            ORDER BY    entity
+            """
+        )
+
+        source_rows = [[row[0], row[1], row[2]] for row in cur]
+
+        for row in source_rows:
+
+            entity_id = row[0] or None
+            point = row[1] or None
+            shape = row[2] or None
+
+            if shape:
+                geometry = shapely.wkt.loads(shape)
+            elif point:
+                geometry = shapely.wkt.loads(point)
+            else:
+                print(f"{LOG_INIT} ERROR in create_geojson_from_wkt - No data for entity_id: {entity_id})")
+                continue
+
+            geo_json = geojson.Feature(geometry=geometry)
+            del geo_json["properties"]
+
+            cur.execute(
+                """
+                UPDATE  entity
+                SET     geojson = ?
+                WHERE   entity = ?
+                """,
+                (json.dumps(geo_json), entity_id)
+            )
+
+        conn.commit()
+        no_errors = True
+
+    except SQL_Error as exc:
+        print(f"{LOG_INIT} ERROR in create_geojson_from_wkt for {entity_model_path}: {exc}")
+        return no_errors
+    finally:
+        conn.close()
+        print(f"{LOG_INIT} finished processing create_geojson_from_wkt for {entity_model_path}", flush=True)
+        return no_errors
 
 
 def get_dataset_features(entity_model_path, dataset=None):
@@ -133,6 +202,20 @@ def build_tiles(entity_path, output_path, dataset):
     if dataset is None:
         dataset = "dataset_tiles"
 
+        # New addition
+        # When run for the first time, dataset_tiles.geojson does not exist
+        # in the output directory, and is generated as part of the dataset run.
+        # This change ensures that successive dataset runs append to dataset_tiles.geojson.
+        # The end result is that, after all datasets have been run, dataset_tiles.geojson
+        # and dataset_tiles.mbtiles contain information from all the datasets.
+        # This file is required downstream as at: Spring '23
+        #
+        # change postponed
+        # parent_output_path = str(Path(output_path).parent.absolute())
+        # previous_dataset_tiles_geojson = f"{parent_output_path}/dataset_tiles.geojson"
+        # if Path(previous_dataset_tiles_geojson).exists():
+        #     shutil.copy(previous_dataset_tiles_geojson, output_path)
+
     print(f"{LOG_INIT} [{dataset}] started processing", flush=True)
 
     create_geojson_file(features, output_path, dataset)
@@ -161,8 +244,17 @@ if __name__ == "__main__":
     entity_path = cmd_args.entity_path[0]
     output_path = cmd_args.output_dir[0]
     datasets = get_geography_datasets(entity_path)
+    if datasets is None:
+        print(f"{LOG_INIT}: No datasets found: {entity_path}", flush=True)
+        exit(1)
+
     print(f"{LOG_INIT} found datasets: {datasets}", flush=True)
     datasets.append(None)
+
+    result = create_geojson_from_wkt(entity_path)
+    if not result:
+        print(f"{LOG_INIT} ERROR processing create_geojson_from_wkt", flush=True)
+        exit(1)
 
     for d in datasets:
         build_tiles(entity_path, output_path, d)
