@@ -1,5 +1,4 @@
 import os.path
-import pathlib
 
 import pandas as pd
 import pytest
@@ -11,7 +10,7 @@ from tests.helpers.expectations import QueryRunner, expect_filtered_entities_to_
 
 @pytest.fixture
 def env_vars():
-    yield {
+    return {
         "data_landing": "../../data/landing",
         "data_clean": "../../data/clean",
         "data_curated": "../../data/curated",
