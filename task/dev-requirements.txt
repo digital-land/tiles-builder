@@ -4,15 +4,36 @@
 #
 #    pip-compile task/dev-requirements.in
 #
+cfgv==3.3.1
+    # via pre-commit
+distlib==0.3.6
+    # via virtualenv
 exceptiongroup==1.1.1
     # via pytest
+filelock==3.12.0
+    # via virtualenv
+identify==2.5.23
+    # via pre-commit
 iniconfig==2.0.0
     # via pytest
+nodeenv==1.7.0
+    # via pre-commit
 packaging==23.1
     # via pytest
+platformdirs==3.4.0
+    # via virtualenv
 pluggy==1.0.0
     # via pytest
+pre-commit==3.2.2
+    # via -r task/dev-requirements.in
 pytest==7.3.1
     # via -r task/dev-requirements.in
+pyyaml==6.0
+    # via pre-commit
 tomli==2.0.1
     # via pytest
+virtualenv==20.22.0
+    # via pre-commit
+
+# The following packages are considered to be unsafe in a requirements file:
+# setuptools

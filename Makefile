@@ -1,4 +1,4 @@
-.PHONY: application task
+.PHONY: application task test
 
 ./files:
 	@mkdir -p ./files/tiles
@@ -19,5 +19,16 @@ application: task
 clean:
 	@rm -rf ./files
 
-test:
-	python -m pytest
+
+test-integration:
+	python -m pytest tests/integration
+
+test-e2e:
+	python -m pytest tests/e2e
+
+test: test-integration test-e2e
+
+init:
+	python -m pip install pip-tools
+	python -m piptools sync task/dev-requirements.txt task/requirements.txt
+	python -m pre_commit install
