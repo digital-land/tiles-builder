@@ -54,7 +54,7 @@ async def tiles_stack_database_order(datasette):
 
 
 def latlon_to_tile(lat, lon, zoom):
-    x_tile = (lon + 180) / 360 * 2 ** zoom
+    x_tile = (lon + 180) / 360 * 2**zoom
     y_tile = (
         (
             1
@@ -62,7 +62,7 @@ def latlon_to_tile(lat, lon, zoom):
             / math.pi
         )
         / 2
-        * 2 ** zoom
+        * 2**zoom
     )
     return x_tile, y_tile
 
@@ -82,7 +82,7 @@ def latlon_to_tile_with_adjust(lat, lon, zoom):
 
 
 def tile_to_latlon(x, y, zoom):
-    n = 2 ** zoom
+    n = 2**zoom
     lon = x / n * 360 - 180
     lat = math.degrees(math.atan(math.sinh(math.pi * (1 - 2 * y / n))))
     return {"lat": lat, "lon": lon}

@@ -28,6 +28,10 @@ test-e2e:
 
 test: test-integration test-e2e
 
+lint:
+	black .
+	flake8 .
+
 init:
 	python -m pip install pip-tools
 	python -m piptools sync task/dev-requirements.txt task/requirements.txt

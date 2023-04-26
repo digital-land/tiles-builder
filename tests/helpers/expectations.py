@@ -39,10 +39,10 @@ class QueryRunner:
 
 
 def expect_custom_query_result_to_be_as_predicted(
-        query_runner: QueryRunner,
-        custom_query: str,
-        expected_query_result: list,
-        **kwargs,
+    query_runner: QueryRunner,
+    custom_query: str,
+    expected_query_result: list,
+    **kwargs,
 ):
     """Receives a custom sqlite/spatialite query as string and a expected
     result in the form of list of row dictionaires, for example, 3 rows
@@ -72,11 +72,11 @@ def expect_custom_query_result_to_be_as_predicted(
 
 
 def expect_filtered_entities_to_be_as_predicted(
-        query_runner: QueryRunner,
-        expected_result: list,
-        columns=None,
-        filters: dict = None,
-        **kwargs,
+    query_runner: QueryRunner,
+    expected_result: list,
+    columns=None,
+    filters: dict = None,
+    **kwargs,
 ):
     possible_filters = ["organisation_entity", "reference"]
     if any(filter not in possible_filters for filter in filters.keys()):
@@ -191,4 +191,3 @@ def build_entity_where_clause(filters):
     where_clause_sql = f"WHERE {' AND '.join(filter_conditions)}"
 
     return where_clause_sql
-

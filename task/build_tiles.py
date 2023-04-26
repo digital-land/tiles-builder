@@ -1,7 +1,5 @@
-import argparse
 import json
 import os
-import logging
 
 import geojson
 import shapely.wkt
@@ -32,12 +30,13 @@ def run(command, pre_log):
                 output = ""
                 while len(select([r], [], [], 0)[0]) > 0:
                     buf = os.read(r, 1024)
-                    output += buf.decode('utf-8')
+                    output += buf.decode("utf-8")
 
-                if output != '' and str.strip(output) != '':
-                    print(f"{pre_log} {output}", end='', flush=True)
+                if output != "" and str.strip(output) != "":
+                    print(f"{pre_log} {output}", end="", flush=True)
 
             return proc
+
 
 # do we need this? we need to just tell if the dataset contains a geography it's not a bad check
 def get_geography_datasets(entity_model_path):
@@ -82,7 +81,6 @@ def create_geojson_from_wkt(entity_model_path):
         source_rows = [[row[0], row[1], row[2]] for row in cur]
 
         for row in source_rows:
-
             entity_id = row[0] or None
             point = row[1] or None
             shape = row[2] or None
@@ -92,7 +90,9 @@ def create_geojson_from_wkt(entity_model_path):
             elif point:
                 geometry = shapely.wkt.loads(point)
             else:
-                print(f"{LOG_INIT} ERROR in create_geojson_from_wkt - No data for entity_id: {entity_id})")
+                print(
+                    f"{LOG_INIT} ERROR in create_geojson_from_wkt - No data for entity_id: {entity_id})"
+                )
                 continue
 
             geo_json = geojson.Feature(geometry=geometry)
@@ -104,18 +104,23 @@ def create_geojson_from_wkt(entity_model_path):
                 SET     geojson = ?
                 WHERE   entity = ?
                 """,
-                (json.dumps(geo_json), entity_id)
+                (json.dumps(geo_json), entity_id),
             )
 
         conn.commit()
         no_errors = True
 
     except SQL_Error as exc:
-        print(f"{LOG_INIT} ERROR in create_geojson_from_wkt for {entity_model_path}: {exc}")
+        print(
+            f"{LOG_INIT} ERROR in create_geojson_from_wkt for {entity_model_path}: {exc}"
+        )
         return no_errors
     finally:
         conn.close()
-        print(f"{LOG_INIT} finished processing create_geojson_from_wkt for {entity_model_path}", flush=True)
+        print(
+            f"{LOG_INIT} finished processing create_geojson_from_wkt for {entity_model_path}",
+            flush=True,
+        )
         return no_errors
 
 
@@ -184,9 +189,11 @@ def create_geojson_file(features, output_path, dataset):
 
 
 def build_dataset_tiles(output_path, dataset):
-    build_tiles_cmd = f"tippecanoe --no-progress-indicator -z15 -Z4 -r1 --no-feature-limit " \
-                      f"--no-tile-size-limit --layer={dataset} --output={output_path}/{dataset}.mbtiles " \
-                      f"{output_path}/{dataset}.geojson "
+    build_tiles_cmd = (
+        f"tippecanoe --no-progress-indicator -z15 -Z4 -r1 --no-feature-limit "
+        f"--no-tile-size-limit --layer={dataset} --output={output_path}/{dataset}.mbtiles "
+        f"{output_path}/{dataset}.geojson "
+    )
     proc = run(build_tiles_cmd, f"{LOG_INIT} [{dataset}]")
     if proc.returncode != 0:
         print(f"{LOG_INIT} [{dataset}] failed to create tiles", flush=True)
@@ -200,11 +207,21 @@ def build_tiles(entity_path, output_path, dataset):
     create_geojson_file(features, output_path, dataset)
     build_dataset_tiles(output_path, dataset)
 
-@click.command()
-@click.option('--entity-path',type=click.Path(exists=True),default=Path("var/cache/entity.sqlite3"),help ="Path to the entity database")
-@click.option('--output-dir',type=click.Path(exists=True),default=Path("var/cache/"),help ="Path to the output directory")
-def main(entity_path,output_dir):
 
+@click.command()
+@click.option(
+    "--entity-path",
+    type=click.Path(exists=True),
+    default=Path("var/cache/entity.sqlite3"),
+    help="Path to the entity database",
+)
+@click.option(
+    "--output-dir",
+    type=click.Path(exists=True),
+    default=Path("var/cache/"),
+    help="Path to the output directory",
+)
+def main(entity_path, output_dir):
     datasets = get_geography_datasets(entity_path)
     if datasets is None:
         print(f"{LOG_INIT}: No datasets found: {entity_path}", flush=True)
@@ -219,7 +236,6 @@ def main(entity_path,output_dir):
 
     for d in datasets:
         build_tiles(entity_path, output_dir, d)
-
 
 
 if __name__ == "__main__":
