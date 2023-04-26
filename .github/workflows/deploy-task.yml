@@ -36,12 +36,6 @@ jobs:
         with:
           python-version: 3.8
 
-      - name: install libsqlite3
-        run: |
-          apt-get update \
-          && apt-get install -y build-essential git libsqlite3-dev zlib1g-dev python3 curl unzip bc \
-          && apt-get clean
-
       - name: install tipcannoe
         run: |
           git clone https://github.com/mapbox/tippecanoe.git \
