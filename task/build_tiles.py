@@ -1,6 +1,7 @@
 import argparse
 import json
 import os
+import logging
 
 import geojson
 import shapely.wkt
@@ -10,6 +11,8 @@ from sqlite3 import Error as SQL_Error
 import subprocess
 from pathlib import Path
 from contextlib import contextmanager
+
+import click
 
 LOG_INIT = f"{os.getenv('EVENT_ID')}:"
 
@@ -36,7 +39,7 @@ def run(command, pre_log):
 
             return proc
 
-
+# do we need this? we need to just tell if the dataset contains a geography it's not a bad check
 def get_geography_datasets(entity_model_path):
     if not Path(entity_model_path).is_file():
         return None
@@ -50,8 +53,6 @@ def get_geography_datasets(entity_model_path):
         FROM
             entity
         WHERE
-            geojson == ''
-        AND
             (geometry != '') OR (point != '')
         """
     )
@@ -119,6 +120,7 @@ def create_geojson_from_wkt(entity_model_path):
 
 
 def get_dataset_features(entity_model_path, dataset=None):
+    # removed organisation table properties may need to be added back iin if replaced by postgis
     conn = sqlite3.connect(entity_model_path)
     json_properties = [
         "'tippecanoe'",
@@ -132,8 +134,6 @@ def get_dataset_features(entity_model_path, dataset=None):
         "entity.dataset",
         "'organisation-entity'",
         "entity.organisation_entity",
-        "'organisation-name'",
-        "oe.name",
         "'entity'",
         "entity.entity",
         "'entry-date'",
@@ -154,8 +154,6 @@ def get_dataset_features(entity_model_path, dataset=None):
             json_object({properties}))
         FROM
             entity
-        LEFT JOIN entity AS oe
-        ON entity.organisation_entity = oe.entity
         WHERE NOT EXISTS (
             SELECT * FROM old_entity
                 WHERE entity.entity = old_entity.old_entity
@@ -198,58 +196,21 @@ def build_dataset_tiles(output_path, dataset):
 
 def build_tiles(entity_path, output_path, dataset):
     features = get_dataset_features(entity_path, dataset)
-
-    if dataset is None:
-        dataset = "dataset_tiles"
-
-        # New addition
-        # When run for the first time, dataset_tiles.geojson does not exist
-        # in the output directory, and is generated as part of the dataset run.
-        # This change ensures that successive dataset runs append to dataset_tiles.geojson.
-        # The end result is that, after all datasets have been run, dataset_tiles.geojson
-        # and dataset_tiles.mbtiles contain information from all the datasets.
-        # This file is required downstream as at: Spring '23
-        #
-        # change postponed
-        # parent_output_path = str(Path(output_path).parent.absolute())
-        # previous_dataset_tiles_geojson = f"{parent_output_path}/dataset_tiles.geojson"
-        # if Path(previous_dataset_tiles_geojson).exists():
-        #     shutil.copy(previous_dataset_tiles_geojson, output_path)
-
     print(f"{LOG_INIT} [{dataset}] started processing", flush=True)
-
     create_geojson_file(features, output_path, dataset)
     build_dataset_tiles(output_path, dataset)
 
+@click.command()
+@click.option('--entity-path',type=click.Path(exists=True),default=Path("var/cache/entity.sqlite3"),help ="Path to the entity database")
+@click.option('--output-dir',type=click.Path(exists=True),default=Path("var/cache/"),help ="Path to the output directory")
+def main(entity_path,output_dir):
 
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Script to build mbtiles databases")
-    parser.add_argument(
-        "--entity-path",
-        type=Path,
-        nargs=1,
-        required=False,
-        default=Path("var/cache/entity.sqlite3"),
-        help="Path to the entity database",
-    )
-    parser.add_argument(
-        "--output-dir",
-        type=Path,
-        nargs=1,
-        required=False,
-        default=Path("var/cache/"),
-        help="The numbers available to use (six must be provided)",
-    )
-    cmd_args = parser.parse_args()
-    entity_path = cmd_args.entity_path[0]
-    output_path = cmd_args.output_dir[0]
     datasets = get_geography_datasets(entity_path)
     if datasets is None:
         print(f"{LOG_INIT}: No datasets found: {entity_path}", flush=True)
         exit(1)
 
     print(f"{LOG_INIT} found datasets: {datasets}", flush=True)
-    datasets.append(None)
 
     result = create_geojson_from_wkt(entity_path)
     if not result:
@@ -257,4 +218,9 @@ if __name__ == "__main__":
         exit(1)
 
     for d in datasets:
-        build_tiles(entity_path, output_path, d)
+        build_tiles(entity_path, output_dir, d)
+
+
+
+if __name__ == "__main__":
+    main()

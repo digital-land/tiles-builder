@@ -18,3 +18,6 @@ application: task
 
 clean:
 	@rm -rf ./files
+
+test:
+	python -m pytest
