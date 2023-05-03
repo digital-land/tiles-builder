@@ -2,15 +2,14 @@
 
 name: Deploy Task To Development
 
-on:
-  workflow_dispatch:
+on: [workflow_dispatch]
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
     env:
       DOCKER_REPO: ${{ secrets.DEPLOY_DOCKER_REPOSITORY }}
-    environment: development
+    environment: development-task
     steps:
       - uses: actions/checkout@v3
 
