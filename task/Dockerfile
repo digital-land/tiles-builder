@@ -18,5 +18,8 @@ WORKDIR /task
 
 COPY ./build.sh .
 COPY ./build_tiles.py .
+COPY ./requirements.txt .
+RUN pip install --user -U pip
+RUN pip install --user --no-cache-dir -r requirements.txt
 
 ENTRYPOINT ["bash", "build.sh"]
