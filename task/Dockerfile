@@ -2,7 +2,7 @@ FROM ubuntu:20.04
 
 RUN apt-get update \
     && apt-get install -y build-essential git libsqlite3-dev zlib1g-dev python3 curl unzip bc \
-    && apt-get install python3-pip \
+    && apt-get install -y python3-pip \
     && apt-get clean
 
 RUN curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip" \
