@@ -2,10 +2,10 @@ name: Deploy Task
 
 on:
   push:
-    branches: [ main ]
     paths:
       - 'task/**'
       - '.github/workflows/deploy-task.yml'
+      - 'tests/**'
   workflow_dispatch:
     inputs:
       environment:
@@ -13,10 +13,48 @@ on:
         description: The environment to deploy to (select a -task environment).
 
 jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v4
+        with:
+          python-version: 3.8
+      - run: make init
+      - run: make lint
+
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v4
+        with:
+          python-version: 3.8
+
+      - name: install tipcannoe
+        run: |
+          git clone https://github.com/mapbox/tippecanoe.git \
+          && cd tippecanoe \
+          && make -j \
+          && sudo make install
+
+      - run: make init
+
+      - name: tests Tests
+        run: |
+          make test
+
   detect-environments:
     runs-on: ubuntu-latest
     outputs:
       environments: ${{ steps.environments.outputs.result }}
+    if: github.ref_name == 'main'
+    needs: [lint,test]
     steps:
       - uses: actions/github-script@v6
         id: environments
@@ -38,6 +76,7 @@ jobs:
       matrix:
         environment: ${{ fromJSON(needs.detect-environments.outputs.environments) }}
     environment: ${{ matrix.environment }}
+    if: github.ref_name == 'main'
     steps:
       - uses: actions/checkout@v3
 

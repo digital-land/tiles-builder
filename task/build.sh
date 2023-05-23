@@ -5,7 +5,7 @@ DATABASE_NAME=${DATABASE%.*}
 
 echo "$EVENT_ID: running with settings: S3_BUCKET=$S3_BUCKET, S3_KEY=$S3_KEY, DATABASE=$DATABASE, DATABASE_NAME=$DATABASE_NAME"
 
-if [[ $DATABASE_NAME != "entity" ]]; then
+if [[ $DATABASE_NAME == "entity" ]] || [[ $DATABASE_NAME == "digital-land" ]]; then
   echo "$EVENT_ID: wrong database, skipping"
   exit 1
 fi
@@ -25,7 +25,7 @@ else
 fi
 
 echo "$EVENT_ID: removing existing temporary tiles"
-rm -rf /mnt/tiles/temporary
+rm -rf /mnt/tiles/temporary/$DATABASE_NAME/
 
 if ! [ -f "$DATABASE_NAME.sqlite3" ]; then
   echo "$EVENT_ID: attempting download from s3://$S3_BUCKET/$S3_KEY"
@@ -41,15 +41,15 @@ else
   echo "$EVENT_ID: did not need to download files"
 fi
 
-mkdir -p /mnt/tiles/temporary
+mkdir -p /mnt/tiles/temporary/$DATABASE_NAME
 echo "$EVENT_ID: building tiles"
-python3 build_tiles.py --entity-path entity.sqlite3 --output-dir /mnt/tiles/temporary && echo "$EVENT_ID: tiles built successfully"
+python3 build_tiles.py --entity-path $DATABASE_NAME.sqlite3 --output-dir /mnt/tiles/temporary/$DATABASE_NAME && echo "$EVENT_ID: tiles built successfully"
 echo "$EVENT_ID: finished building tiles"
-rm -rf /mnt/tiles/*.mbtiles
-rm -rf /mnt/tiles/*.geojson
+rm -rf /mnt/tiles/$DATABASE_NAME.mbtiles
+rm -rf /mnt/tiles/$DATABASE_NAME.geojson
 
-mv /mnt/tiles/temporary/* /mnt/tiles
-rm -rf /mnt/tiles/temporary
+mv /mnt/tiles/temporary/$DATABASE_NAME/* /mnt/tiles
+rm -rf /mnt/tiles/temporary/$DATABASE_NAME
 
 echo "$EVENT_ID: tile files swapped out"
 date +%s >/mnt/tiles/updated
