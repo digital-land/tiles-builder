@@ -11,7 +11,7 @@ jobs:
       DOCKER_REPO: ${{ secrets.DEPLOY_DOCKER_REPOSITORY }}
     environment: development-task
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - id: vars
         run: echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
