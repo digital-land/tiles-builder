@@ -35,118 +35,137 @@ def run(command, pre_log):
                 if output != "" and str.strip(output) != "":
                     print(f"{pre_log} {output}", end="", flush=True)
 
+            if proc.returncode != 0:
+                print(f"{pre_log} ERROR: Command failed with return code {proc.returncode}")
+
             return proc
 
 
 def get_geography_datasets(entity_model_path):
     if not Path(entity_model_path).is_file():
+        print(f"{LOG_INIT} ERROR: Path does not exist: {entity_model_path}")
         return None
 
-    conn = sqlite3.connect(entity_model_path)
-    cur = conn.cursor()
-    cur.execute(
-        """
-        SELECT
-            DISTINCT dataset
-        FROM
-            entity
-        WHERE
-            (geometry != '') OR (point != '')
-        """
-    )
-    geography_datasets = [x[0] for x in cur]
-    return geography_datasets
+    try:
+        conn = sqlite3.connect(entity_model_path)
+        cur = conn.cursor()
+        cur.execute(
+            """
+            SELECT DISTINCT dataset
+            FROM entity
+            WHERE (geometry != '') OR (point != '')
+            """
+        )
+        geography_datasets = [x[0] for x in cur]
+        conn.close()
+        return geography_datasets
+    except SQL_Error as e:
+        print(f"{LOG_INIT} ERROR: Failed to retrieve datasets - {e}")
+        return None
 
 
 def process_entities(conn):
-    cursor = conn.cursor()
-    cursor.execute(
-        """
-        SELECT entity, point, geometry
-        FROM entity
-        WHERE geometry != '' OR point != ''
-        ORDER BY entity
-        """
-    )
+    try:
+        cursor = conn.cursor()
+        cursor.execute(
+            """
+            SELECT entity, point, geometry
+            FROM entity
+            WHERE geometry != '' OR point != ''
+            ORDER BY entity
+            """
+        )
 
-    batch = []
-    batch_size = 500  # Adjust batch size based on memory constraints and performance
+        batch = []
+        batch_size = 500
 
-    for entity_id, point, geometry in cursor:
-        if geometry:
-            geo_obj = shapely.wkt.loads(geometry)
-        elif point:
-            geo_obj = shapely.wkt.loads(point)
-        else:
-            continue
+        for entity_id, point, geometry in cursor:
+            try:
+                if geometry:
+                    geo_obj = shapely.wkt.loads(geometry)
+                elif point:
+                    geo_obj = shapely.wkt.loads(point)
+                else:
+                    continue
 
-        geo_json = geojson.Feature(geometry=geo_obj, properties={})
-        batch.append((json.dumps(geo_json), entity_id))
+                geo_json = geojson.Feature(geometry=geo_obj, properties={})
+                batch.append((json.dumps(geo_json), entity_id))
 
-        if len(batch) >= batch_size:
+                if len(batch) >= batch_size:
+                    update_geojson_batch(conn, batch)
+                    batch = []
+
+            except Exception as e:
+                print(f"{LOG_INIT} ERROR processing entity ID {entity_id}: {e}")
+
+        if batch:
             update_geojson_batch(conn, batch)
-            batch = []
 
-    if batch:
-        update_geojson_batch(conn, batch)
-
-    cursor.close()
+        cursor.close()
+    except SQL_Error as e:
+        print(f"{LOG_INIT} ERROR during processing entities: {e}")
 
 
 def update_geojson_batch(conn, updates):
-    """
-    Batch update the geojson column in the entity table.
-    `updates` should be a list of tuples (geojson, entity_id).
-    """
-    cursor = conn.cursor()
-    cursor.executemany(
-        """
-        UPDATE entity
-        SET geojson = ?
-        WHERE entity = ?
-        """,
-        updates
-    )
-    conn.commit()
+    try:
+        cursor = conn.cursor()
+        cursor.executemany(
+            """
+            UPDATE entity
+            SET geojson = ?
+            WHERE entity = ?
+            """,
+            updates
+        )
+        conn.commit()
+    except SQL_Error as e:
+        print(f"{LOG_INIT} ERROR updating batch: {e}")
 
 
 def get_dataset_features(entity_model_path, dataset=None):
-    conn = sqlite3.connect(entity_model_path)
-    cur = conn.cursor()
-    query = """
-        SELECT json_object(
-            'type', 'FeatureCollection',
-            'features', json_group_array(
-                json_object(
-                    'type', 'Feature',
-                    'geometry', json(json_extract(entity.geojson, '$.geometry')),
-                    'properties', json_object(
-                        'name', entity.name,
-                        'dataset', entity.dataset,
-                        'organisation-entity', entity.organisation_entity,
-                        'entity', entity.entity,
-                        'entry-date', entity.entry_date,
-                        'start-date', entity.start_date,
-                        'end-date', entity.end_date,
-                        'prefix', entity.prefix,
-                        'reference', entity.reference
+    try:
+        conn = sqlite3.connect(entity_model_path)
+        cur = conn.cursor()
+        query = """
+            SELECT json_object(
+                'type', 'FeatureCollection',
+                'features', json_group_array(
+                    json_object(
+                        'type', 'Feature',
+                        'geometry', json(json_extract(entity.geojson, '$.geometry')),
+                        'properties', json_object(
+                            'name', entity.name,
+                            'dataset', entity.dataset,
+                            'organisation-entity', entity.organisation_entity,
+                            'entity', entity.entity,
+                            'entry-date', entity.entry_date,
+                            'start-date', entity.start_date,
+                            'end-date', entity.end_date,
+                            'prefix', entity.prefix,
+                            'reference', entity.reference
+                        )
                     )
                 )
             )
-        )
-        FROM entity
-        WHERE entity.dataset = ? AND entity.geojson != ''
-    """
-    cur.execute(query, (dataset,))
-    result = cur.fetchone()[0]
-    return result
+            FROM entity
+            WHERE entity.dataset = ? AND entity.geojson != ''
+        """
+        cur.execute(query, (dataset,))
+        result = cur.fetchone()[0]
+        conn.close()
+        return result
+    except SQL_Error as e:
+        print(f"{LOG_INIT} ERROR fetching dataset features: {e}")
+        return None
 
 
 def create_geojson_file(features, output_path, dataset):
-    with open(f"{output_path}/{dataset}.geojson", "w") as f:
-        f.write(features)
-    print(f"{LOG_INIT} [{dataset}] created geojson", flush=True)
-
+    if features:
+        with open(f"{output_path}/{dataset}.geojson", "w") as f:
+            f.write(features)
+        print(f"{LOG_INIT} [{dataset}] created geojson", flush=True)
+    else:
+        print(f"{LOG_INIT} ERROR: No features to write for dataset {dataset}")
 
 def build_dataset_tiles(output_path, dataset):
     build_tiles_cmd = (
@@ -164,9 +183,12 @@ def build_dataset_tiles(output_path, dataset):
 def build_tiles(entity_path, output_path, dataset):
     conn = sqlite3.connect(entity_path)
     features = get_dataset_features(entity_path, dataset)
-    print(f"{LOG_INIT} [{dataset}] started processing", flush=True)
-    create_geojson_file(features, output_path, dataset)
-    build_dataset_tiles(output_path, dataset)
+    if features:
+        print(f"{LOG_INIT} [{dataset}] started processing", flush=True)
+        create_geojson_file(features, output_path, dataset)
+        build_dataset_tiles(output_path, dataset)
+    else:
+        print(f"{LOG_INIT} ERROR: No features found for dataset {dataset}")
     conn.close()
 
 
