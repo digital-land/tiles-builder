@@ -38,7 +38,6 @@ def run(command, pre_log):
             return proc
 
 
-# do we need this? we need to just tell if the dataset contains a geography it's not a bad check
 def get_geography_datasets(entity_model_path):
     if not Path(entity_model_path).is_file():
         return None
@@ -59,132 +58,93 @@ def get_geography_datasets(entity_model_path):
     return geography_datasets
 
 
-def create_geojson_from_wkt(entity_model_path):
-    no_errors = False
-    print(f"{LOG_INIT} started creating geojson for {entity_model_path}", flush=True)
-    conn = sqlite3.connect(entity_model_path)
+def process_entities(conn):
+    cursor = conn.cursor()
+    cursor.execute(
+        """
+        SELECT entity, point, geometry
+        FROM entity
+        WHERE geometry != '' OR point != ''
+        ORDER BY entity
+        """
+    )
 
-    try:
-        cur = conn.cursor()
-        cur.execute(
-            """
-            SELECT      entity,
-                        point,
-                        geometry
-            FROM        entity
-            WHERE       geometry != ''
-            OR          point != ''
-            ORDER BY    entity
-            """
-        )
+    batch = []
+    batch_size = 500  # Adjust batch size based on memory constraints and performance
 
-        source_rows = [[row[0], row[1], row[2]] for row in cur]
+    for entity_id, point, geometry in cursor:
+        if geometry:
+            geo_obj = shapely.wkt.loads(geometry)
+        elif point:
+            geo_obj = shapely.wkt.loads(point)
+        else:
+            continue
 
-        for row in source_rows:
-            entity_id = row[0] or None
-            point = row[1] or None
-            shape = row[2] or None
+        geo_json = geojson.Feature(geometry=geo_obj, properties={})
+        batch.append((json.dumps(geo_json), entity_id))
 
-            if shape:
-                geometry = shapely.wkt.loads(shape)
-            elif point:
-                geometry = shapely.wkt.loads(point)
-            else:
-                print(
-                    f"{LOG_INIT} ERROR in create_geojson_from_wkt - No data for entity_id: {entity_id})"
-                )
-                continue
+        if len(batch) >= batch_size:
+            update_geojson_batch(conn, batch)
+            batch = []
 
-            geo_json = geojson.Feature(geometry=geometry)
-            del geo_json["properties"]
+    if batch:
+        update_geojson_batch(conn, batch)
 
-            cur.execute(
-                """
-                UPDATE  entity
-                SET     geojson = ?
-                WHERE   entity = ?
-                """,
-                (json.dumps(geo_json), entity_id),
-            )
+    cursor.close()
 
-        conn.commit()
-        no_errors = True
 
-    except SQL_Error as exc:
-        print(
-            f"{LOG_INIT} ERROR in create_geojson_from_wkt for {entity_model_path}: {exc}"
-        )
-        return no_errors
-    finally:
-        conn.close()
-        print(
-            f"{LOG_INIT} finished processing create_geojson_from_wkt for {entity_model_path}",
-            flush=True,
-        )
-        return no_errors
+def update_geojson_batch(conn, updates):
+    """
+    Batch update the geojson column in the entity table.
+    `updates` should be a list of tuples (geojson, entity_id).
+    """
+    cursor = conn.cursor()
+    cursor.executemany(
+        """
+        UPDATE entity
+        SET geojson = ?
+        WHERE entity = ?
+        """,
+        updates
+    )
+    conn.commit()
 
 
 def get_dataset_features(entity_model_path, dataset=None):
-    # removed organisation table properties may need to be added back iin if replaced by postgis
     conn = sqlite3.connect(entity_model_path)
-    json_properties = [
-        "'tippecanoe'",
-        "json_object('layer', entity.dataset)",
-        "'entity'",
-        "entity.entity",
-        "'properties'",
-        "json_patch(" "json_object(" "'name'",
-        "entity.name",
-        "'dataset'",
-        "entity.dataset",
-        "'organisation-entity'",
-        "entity.organisation_entity",
-        "'entity'",
-        "entity.entity",
-        "'entry-date'",
-        "entity.entry_date",
-        "'start-date'",
-        "entity.start_date",
-        "'end-date'",
-        "entity.end_date",
-        "'prefix'",
-        "entity.prefix",
-        "'reference'",
-        "entity.reference" ")",
-        "IFNULL(entity.json, '{}')" ")",
-    ]
-    query = """
-        SELECT
-            json_patch(entity.geojson,
-            json_object({properties}))
-        FROM
-            entity
-        WHERE NOT EXISTS (
-            SELECT * FROM old_entity
-                WHERE entity.entity = old_entity.old_entity
-        )
-        AND entity.geojson != ''
-        """.format(
-        properties=",".join(json_properties)
-    )
-
     cur = conn.cursor()
-    if dataset:
-        query += "AND entity.dataset == ?"
-        cur.execute(query, (dataset,))
-    else:
-        cur.execute(query)
-
-    results = ",".join(x[0] for x in cur)
-    results = results.rstrip(",")
-
-    return results
+    query = """
+        SELECT json_object(
+            'type', 'FeatureCollection',
+            'features', json_group_array(
+                json_object(
+                    'type', 'Feature',
+                    'geometry', json(json_extract(entity.geojson, '$.geometry')),
+                    'properties', json_object(
+                        'name', entity.name,
+                        'dataset', entity.dataset,
+                        'organisation-entity', entity.organisation_entity,
+                        'entity', entity.entity,
+                        'entry-date', entity.entry_date,
+                        'start-date', entity.start_date,
+                        'end-date', entity.end_date,
+                        'prefix', entity.prefix,
+                        'reference', entity.reference
+                    )
+                )
+            )
+        )
+        FROM entity
+        WHERE entity.dataset = ? AND entity.geojson != ''
+    """
+    cur.execute(query, (dataset,))
+    result = cur.fetchone()[0]
+    return result
 
 
 def create_geojson_file(features, output_path, dataset):
-    geojson = '{"type":"FeatureCollection","features":[' + features + "]}"
     with open(f"{output_path}/{dataset}.geojson", "w") as f:
-        f.write(geojson)
+        f.write(features)
     print(f"{LOG_INIT} [{dataset}] created geojson", flush=True)
 
 
@@ -192,7 +152,7 @@ def build_dataset_tiles(output_path, dataset):
     build_tiles_cmd = (
         f"tippecanoe --no-progress-indicator -z15 -Z4 -r1 --no-feature-limit "
         f"--no-tile-size-limit --layer={dataset} --output={output_path}/{dataset}.mbtiles "
-        f"{output_path}/{dataset}.geojson "
+        f"{output_path}/{dataset}.geojson"
     )
     proc = run(build_tiles_cmd, f"{LOG_INIT} [{dataset}]")
     if proc.returncode != 0:
@@ -202,10 +162,12 @@ def build_dataset_tiles(output_path, dataset):
 
 
 def build_tiles(entity_path, output_path, dataset):
+    conn = sqlite3.connect(entity_path)
     features = get_dataset_features(entity_path, dataset)
     print(f"{LOG_INIT} [{dataset}] started processing", flush=True)
     create_geojson_file(features, output_path, dataset)
     build_dataset_tiles(output_path, dataset)
+    conn.close()
 
 
 @click.command()
@@ -229,10 +191,9 @@ def main(entity_path, output_dir):
 
     print(f"{LOG_INIT} found datasets: {datasets}", flush=True)
 
-    result = create_geojson_from_wkt(entity_path)
-    if not result:
-        print(f"{LOG_INIT} ERROR processing create_geojson_from_wkt", flush=True)
-        exit(1)
+    conn = sqlite3.connect(entity_path)
+    process_entities(conn)
+    conn.close()
 
     for d in datasets:
         build_tiles(entity_path, output_dir, d)
