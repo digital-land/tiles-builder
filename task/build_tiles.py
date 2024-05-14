@@ -58,6 +58,9 @@ def get_geography_datasets(entity_model_path):
     return geography_datasets
 
 
+LOG_INIT = "GEOJSON_CREATION"
+
+
 def create_geojson_from_wkt(entity_model_path):
     no_errors = False
     current_time = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
@@ -68,55 +71,76 @@ def create_geojson_from_wkt(entity_model_path):
     conn = sqlite3.connect(entity_model_path)
 
     try:
-        cur = conn.cursor()
-        cur.execute(
-            """
-            SELECT      entity,
-                        point,
-                        geometry
-            FROM        entity
-            WHERE       geometry != ''
-            OR          point != ''
-            ORDER BY    entity
-            """
-        )
-
+        total_rows = 0
         batch_size = 10000
 
         while True:
-            rows = cur.fetchmany(batch_size)
-            if not rows:
-                break
-
-            for row in rows:
-                entity_id = row[0] or None
-                point = row[1] or None
-                shape = row[2] or None
-
-                if shape:
-                    geometry = shapely.wkt.loads(shape)
-                elif point:
-                    geometry = shapely.wkt.loads(point)
-                else:
-                    print(
-                        f"{LOG_INIT} ERROR in create_geojson_from_wkt - No data for entity_id: {entity_id})"
-                    )
-                    continue
-
-                geo_json = geojson.Feature(geometry=geometry)
-                del geo_json["properties"]
-
+            try:
+                cur = conn.cursor()
                 cur.execute(
                     """
-                    UPDATE  entity
-                    SET     geojson = ?
-                    WHERE   entity = ?
+                    SELECT entity, point, geometry
+                    FROM entity
+                    WHERE geometry != ''
+                    OR point != ''
+                    ORDER BY entity
+                    LIMIT ? OFFSET ?
                     """,
-                    (json.dumps(geo_json), entity_id),
+                    (batch_size, total_rows),
                 )
 
-            conn.commit()
-            no_errors = True
+                rows = cur.fetchall()
+                fetched_rows = len(rows)
+                print(f"Fetched {fetched_rows} rows.")
+                total_rows += fetched_rows
+
+                if not rows:
+                    print("No more rows to fetch")
+                    break
+
+                for row in rows:
+                    entity_id = row[0] or None
+                    point = row[1] or None
+                    shape = row[2] or None
+
+                    try:
+                        if shape:
+                            geometry = shapely.wkt.loads(shape)
+                        elif point:
+                            geometry = shapely.wkt.loads(point)
+                        else:
+                            print(
+                                f"{LOG_INIT} ERROR in create_geojson_from_wkt - No data for entity_id: {entity_id}"
+                            )
+                            continue
+
+                        geo_json = geojson.Feature(geometry=geometry)
+                        del geo_json["properties"]
+
+                        cur.execute(
+                            """
+                            UPDATE entity
+                            SET geojson = ?
+                            WHERE entity = ?
+                            """,
+                            (json.dumps(geo_json), entity_id),
+                        )
+                    except Exception as e:
+                        print(
+                            f"{LOG_INIT} ERROR in processing entity_id: {entity_id}, Error: {e}"
+                        )
+
+                cur.close()
+                conn.commit()
+
+            except sqlite3.Error as exc:
+                print(
+                    f"{LOG_INIT} ERROR during batch processing for {entity_model_path}: {exc}"
+                )
+                break
+
+        no_errors = True
+        print(f"Total rows processed: {total_rows}")
 
     except sqlite3.Error as exc:
         print(
@@ -128,7 +152,11 @@ def create_geojson_from_wkt(entity_model_path):
             f"{LOG_INIT} finished processing create_geojson_from_wkt for {entity_model_path}",
             flush=True,
         )
-        return no_errors
+        if no_errors:
+            return True
+        else:
+            print(f"{LOG_INIT} ERROR processing create_geojson_from_wkt")
+            return False
 
 
 def get_dataset_features(entity_model_path, dataset=None):
