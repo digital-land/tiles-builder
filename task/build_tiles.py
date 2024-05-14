@@ -5,7 +5,6 @@ import geojson
 import shapely.wkt
 from select import select
 import sqlite3
-from sqlite3 import Error as SQL_Error
 import subprocess
 from pathlib import Path
 from contextlib import contextmanager
@@ -82,43 +81,47 @@ def create_geojson_from_wkt(entity_model_path):
             """
         )
 
-        source_rows = [[row[0], row[1], row[2]] for row in cur]
+        batch_size = 10000
 
-        for row in source_rows:
-            entity_id = row[0] or None
-            point = row[1] or None
-            shape = row[2] or None
+        while True:
+            rows = cur.fetchmany(batch_size)
+            if not rows:
+                break
 
-            if shape:
-                geometry = shapely.wkt.loads(shape)
-            elif point:
-                geometry = shapely.wkt.loads(point)
-            else:
-                print(
-                    f"{LOG_INIT} ERROR in create_geojson_from_wkt - No data for entity_id: {entity_id})"
+            for row in rows:
+                entity_id = row[0] or None
+                point = row[1] or None
+                shape = row[2] or None
+
+                if shape:
+                    geometry = shapely.wkt.loads(shape)
+                elif point:
+                    geometry = shapely.wkt.loads(point)
+                else:
+                    print(
+                        f"{LOG_INIT} ERROR in create_geojson_from_wkt - No data for entity_id: {entity_id})"
+                    )
+                    continue
+
+                geo_json = geojson.Feature(geometry=geometry)
+                del geo_json["properties"]
+
+                cur.execute(
+                    """
+                    UPDATE  entity
+                    SET     geojson = ?
+                    WHERE   entity = ?
+                    """,
+                    (json.dumps(geo_json), entity_id),
                 )
-                continue
 
-            geo_json = geojson.Feature(geometry=geometry)
-            del geo_json["properties"]
+            conn.commit()
+            no_errors = True
 
-            cur.execute(
-                """
-                UPDATE  entity
-                SET     geojson = ?
-                WHERE   entity = ?
-                """,
-                (json.dumps(geo_json), entity_id),
-            )
-
-        conn.commit()
-        no_errors = True
-
-    except SQL_Error as exc:
+    except sqlite3.Error as exc:
         print(
             f"{LOG_INIT} ERROR in create_geojson_from_wkt for {entity_model_path}: {exc}"
         )
-        return no_errors
     finally:
         conn.close()
         print(
@@ -185,36 +188,40 @@ def get_dataset_features(entity_model_path, dataset=None):
     return results
 
 
-# def create_geojson_file(features, output_path, dataset):
-#     geojson = '{"type":"FeatureCollection","features":[' + features + "]}"
-#     with open(f"{output_path}/{dataset}.geojson", "w") as f:
-#         f.write(geojson)
-#     print(f"{LOG_INIT} [{dataset}] created geojson", flush=True)
-
-
 def create_geojson_file(features, output_path, dataset):
-    print("features: ", features)
-    batch_size = 50000
-    num_features = len(features)
-
+    current_time = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    print(f"{current_time}: started creating geojson file")
+    geojson = '{"type":"FeatureCollection","features":[' + features + "]}"
     with open(f"{output_path}/{dataset}.geojson", "w") as f:
-        f.write('{"type":"FeatureCollection","features":[')
+        f.write(geojson)
+    print(f"{LOG_INIT} [{dataset}] created geojson", flush=True)
 
-        for start_index in range(0, num_features, batch_size):
-            # end_index = min(start_index + batch_size, num_features)
-            batch_features = features[start_index : start_index + batch_size]
 
-            # if start_index > 0:
-            #     f.write(',')  # Add comma between GeoJSON objects
+# def create_geojson_file(features, output_path, dataset):
+#     batch_size = 50000
+#     num_features = len(features)
 
-            # geojson = {"type": "FeatureCollection", "features": batch_features}
-            f.write(batch_features)
-            # print(f"Processed features {start_index+1}-{end_index} of {num_features} for [{dataset}]", flush=True)
+#     with open(f"{output_path}/{dataset}.geojson", "w") as f:
+#         f.write('{"type":"FeatureCollection","features":[')
 
-        f.write("]}")
+#         for start_index in range(0, num_features, batch_size):
+#             # end_index = min(start_index + batch_size, num_features)
+#             batch_features = features[start_index : start_index + batch_size]
+
+#             # if start_index > 0:
+#             #     f.write(',')  # Add comma between GeoJSON objects
+
+#             # geojson = {"type": "FeatureCollection", "features": batch_features}
+#             f.write(batch_features)
+#             #print(f"Processed features {start_index+1}-{start_index + batch_size} of
+#               {num_features} for [{dataset}]", flush=True)
+
+#         f.write("]}")
 
 
 def build_dataset_tiles(output_path, dataset):
+    current_time = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    print(f"{current_time}: Started building tiles - build_dataset_tiles")
     build_tiles_cmd = (
         f"tippecanoe --no-progress-indicator -z15 -Z4 -r1 --no-feature-limit "
         f"--no-tile-size-limit --layer={dataset} --output={output_path}/{dataset}.mbtiles "
