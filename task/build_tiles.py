@@ -37,7 +37,6 @@ def run(command, pre_log):
             return proc
 
 
-# do we need this? we need to just tell if the dataset contains a geography it's not a bad check
 def get_geography_datasets(entity_model_path):
     if not Path(entity_model_path).is_file():
         return None
@@ -56,9 +55,6 @@ def get_geography_datasets(entity_model_path):
     )
     geography_datasets = [x[0] for x in cur]
     return geography_datasets
-
-
-LOG_INIT = "GEOJSON_CREATION"
 
 
 def create_geojson_from_wkt(entity_model_path):
@@ -136,7 +132,6 @@ def create_geojson_from_wkt(entity_model_path):
 
 
 def get_dataset_features(entity_model_path, dataset=None):
-    # removed organisation table properties may need to be added back iin if replaced by postgis
     conn = sqlite3.connect(entity_model_path)
     json_properties = [
         "'tippecanoe'",
@@ -199,28 +194,6 @@ def create_geojson_file(features, output_path, dataset):
     with open(f"{output_path}/{dataset}.geojson", "w") as f:
         f.write(geojson)
     print(f"{LOG_INIT} [{dataset}] created geojson", flush=True)
-
-
-# def create_geojson_file(features, output_path, dataset):
-#     batch_size = 50000
-#     num_features = len(features)
-
-#     with open(f"{output_path}/{dataset}.geojson", "w") as f:
-#         f.write('{"type":"FeatureCollection","features":[')
-
-#         for start_index in range(0, num_features, batch_size):
-#             # end_index = min(start_index + batch_size, num_features)
-#             batch_features = features[start_index : start_index + batch_size]
-
-#             # if start_index > 0:
-#             #     f.write(',')  # Add comma between GeoJSON objects
-
-#             # geojson = {"type": "FeatureCollection", "features": batch_features}
-#             f.write(batch_features)
-#             #print(f"Processed features {start_index+1}-{start_index + batch_size} of
-#               {num_features} for [{dataset}]", flush=True)
-
-#         f.write("]}")
 
 
 def build_dataset_tiles(output_path, dataset):
