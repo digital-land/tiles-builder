@@ -61,7 +61,7 @@ def create_geojson_from_wkt(entity_model_path):
     no_errors = False
     current_time = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     print(
-        f"{current_time}: {LOG_INIT} started creating geojson for {entity_model_path}",
+        f"{current_time}: {LOG_INIT} started creating new code geojson for {entity_model_path}",
         flush=True,
     )
     conn = sqlite3.connect(entity_model_path)
@@ -125,7 +125,7 @@ def create_geojson_from_wkt(entity_model_path):
         update_cursor.close()
         conn.close()
         print(
-            f"{LOG_INIT} finished processing create_geojson_from_wkt for {entity_model_path}",
+            f"{LOG_INIT} finished processing new code create_geojson_from_wkt for {entity_model_path}",
             flush=True,
         )
         return no_errors
@@ -198,7 +198,7 @@ def create_geojson_file(features, output_path, dataset):
 
 def build_dataset_tiles(output_path, dataset):
     current_time = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    print(f"{current_time}: Started building tiles - build_dataset_tiles")
+    print(f"{current_time}: Started building tiles - build_dataset_tiles (NEW CODE)")
     build_tiles_cmd = (
         f"tippecanoe --no-progress-indicator -z15 -Z4 -r1 --no-feature-limit "
         f"--no-tile-size-limit --layer={dataset} --output={output_path}/{dataset}.mbtiles "
@@ -214,7 +214,7 @@ def build_dataset_tiles(output_path, dataset):
 
 def build_tiles(entity_path, output_path, dataset):
     features = get_dataset_features(entity_path, dataset)
-    print(f"{LOG_INIT} [{dataset}] started processing", flush=True)
+    print(f"{LOG_INIT} [{dataset}] started processing (NEW CODE)", flush=True)
     create_geojson_file(features, output_path, dataset)
     build_dataset_tiles(output_path, dataset)
 
