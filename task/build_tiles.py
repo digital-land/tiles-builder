@@ -5,11 +5,10 @@ import geojson
 import shapely.wkt
 from select import select
 import sqlite3
-from sqlite3 import Error as SQL_Error
 import subprocess
 from pathlib import Path
 from contextlib import contextmanager
-
+import datetime
 import click
 
 LOG_INIT = f"{os.getenv('EVENT_ID')}:"
@@ -38,7 +37,6 @@ def run(command, pre_log):
             return proc
 
 
-# do we need this? we need to just tell if the dataset contains a geography it's not a bad check
 def get_geography_datasets(entity_model_path):
     if not Path(entity_model_path).is_file():
         return None
@@ -61,11 +59,16 @@ def get_geography_datasets(entity_model_path):
 
 def create_geojson_from_wkt(entity_model_path):
     no_errors = False
-    print(f"{LOG_INIT} started creating geojson for {entity_model_path}", flush=True)
+    current_time = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    print(
+        f"{current_time}: {LOG_INIT} started creating geojson for {entity_model_path}",
+        flush=True,
+    )
     conn = sqlite3.connect(entity_model_path)
 
     try:
         cur = conn.cursor()
+        update_cursor = conn.cursor()
         cur.execute(
             """
             SELECT      entity,
@@ -78,44 +81,48 @@ def create_geojson_from_wkt(entity_model_path):
             """
         )
 
-        source_rows = [[row[0], row[1], row[2]] for row in cur]
+        batch_size = 10000
 
-        for row in source_rows:
-            entity_id = row[0] or None
-            point = row[1] or None
-            shape = row[2] or None
+        while True:
+            rows = cur.fetchmany(batch_size)
+            if not rows:
+                break
+            for row in rows:
+                entity_id = row[0] or None
+                point = row[1] or None
+                shape = row[2] or None
 
-            if shape:
-                geometry = shapely.wkt.loads(shape)
-            elif point:
-                geometry = shapely.wkt.loads(point)
-            else:
-                print(
-                    f"{LOG_INIT} ERROR in create_geojson_from_wkt - No data for entity_id: {entity_id})"
+                if shape:
+                    geometry = shapely.wkt.loads(shape)
+                elif point:
+                    geometry = shapely.wkt.loads(point)
+                else:
+                    print(
+                        f"{LOG_INIT} ERROR in create_geojson_from_wkt - No data for entity_id: {entity_id})"
+                    )
+                    continue
+
+                geo_json = geojson.Feature(geometry=geometry)
+                del geo_json["properties"]
+                update_cursor.execute(
+                    """
+                    UPDATE  entity
+                    SET     geojson = ?
+                    WHERE   entity = ?
+                    """,
+                    (json.dumps(geo_json), entity_id),
                 )
-                continue
 
-            geo_json = geojson.Feature(geometry=geometry)
-            del geo_json["properties"]
-
-            cur.execute(
-                """
-                UPDATE  entity
-                SET     geojson = ?
-                WHERE   entity = ?
-                """,
-                (json.dumps(geo_json), entity_id),
-            )
-
+            no_errors = True
         conn.commit()
-        no_errors = True
 
-    except SQL_Error as exc:
+    except sqlite3.Error as exc:
         print(
             f"{LOG_INIT} ERROR in create_geojson_from_wkt for {entity_model_path}: {exc}"
         )
-        return no_errors
     finally:
+        cur.close()
+        update_cursor.close()
         conn.close()
         print(
             f"{LOG_INIT} finished processing create_geojson_from_wkt for {entity_model_path}",
@@ -125,7 +132,6 @@ def create_geojson_from_wkt(entity_model_path):
 
 
 def get_dataset_features(entity_model_path, dataset=None):
-    # removed organisation table properties may need to be added back iin if replaced by postgis
     conn = sqlite3.connect(entity_model_path)
     json_properties = [
         "'tippecanoe'",
@@ -182,6 +188,8 @@ def get_dataset_features(entity_model_path, dataset=None):
 
 
 def create_geojson_file(features, output_path, dataset):
+    current_time = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    print(f"{current_time}: started creating geojson file")
     geojson = '{"type":"FeatureCollection","features":[' + features + "]}"
     with open(f"{output_path}/{dataset}.geojson", "w") as f:
         f.write(geojson)
@@ -189,6 +197,8 @@ def create_geojson_file(features, output_path, dataset):
 
 
 def build_dataset_tiles(output_path, dataset):
+    current_time = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    print(f"{current_time}: Started building tiles - build_dataset_tiles")
     build_tiles_cmd = (
         f"tippecanoe --no-progress-indicator -z15 -Z4 -r1 --no-feature-limit "
         f"--no-tile-size-limit --layer={dataset} --output={output_path}/{dataset}.mbtiles "
@@ -198,7 +208,8 @@ def build_dataset_tiles(output_path, dataset):
     if proc.returncode != 0:
         print(f"{LOG_INIT} [{dataset}] failed to create tiles", flush=True)
     else:
-        print(f"{LOG_INIT} [{dataset}] created tiles", flush=True)
+        current_time = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        print(f"{current_time}: {LOG_INIT} [{dataset}] created tiles", flush=True)
 
 
 def build_tiles(entity_path, output_path, dataset):
