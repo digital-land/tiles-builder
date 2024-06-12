@@ -14,11 +14,13 @@ from task.build_tiles import (
 
 class TestGeoJsonFunctions(unittest.TestCase):
     @patch("builtins.open", new_callable=mock_open, read_data='{"hash": "abc123"}')
-    def test_get_stored_hash_exists(self, mock_file):
+    @patch("pathlib.Path.exists", return_value=True)
+    def test_get_stored_hash_exists(self, mock_exists, mock_file):
         hash_path = Path("dummy_path.json")
         result = get_stored_hash(hash_path)
         self.assertEqual(result, "abc123")
-        mock_file.assert_called_once_with(hash_path, "r")
+        mock_file.assert_called_once_with(hash_path)
+        mock_exists.assert_called_once()
 
     @patch("pathlib.Path.exists", MagicMock(return_value=False))
     def test_get_stored_hash_not_exists(self):
