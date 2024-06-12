@@ -1,6 +1,5 @@
 import json
 import os
-
 import geojson
 import shapely.wkt
 from select import select
@@ -9,6 +8,7 @@ import subprocess
 from pathlib import Path
 from contextlib import contextmanager
 import datetime
+import hashlib
 import click
 
 LOG_INIT = f"{os.getenv('EVENT_ID')}:"
@@ -219,6 +219,25 @@ def build_tiles(entity_path, output_path, dataset):
     build_dataset_tiles(output_path, dataset)
 
 
+def get_current_sqlite_hash(sqlite_path):
+    with open(sqlite_path, "rb") as f:
+        sqlite_data = f.read()
+    return hashlib.md5(sqlite_data).hexdigest()
+
+
+def get_stored_hash(hash_path):
+    if hash_path.exists():
+        with open(hash_path) as file:
+            return json.load(file).get("hash")
+    return None
+
+
+def update_current_sqlite_hash(hash_path, new_hash):
+    with open(hash_path, "w") as file:
+        hash_dict = {"hash": new_hash}
+        file.write(json.dumps(hash_dict))
+
+
 @click.command()
 @click.option(
     "--entity-path",
@@ -232,7 +251,16 @@ def build_tiles(entity_path, output_path, dataset):
     default=Path("var/cache/"),
     help="Path to the output directory",
 )
-def main(entity_path, output_dir):
+@click.option(
+    "--hash-dir",
+    type=click.Path(),
+    default=Path("var/cache/hashes/"),
+    help="Path to the directory for storing hashes",
+)
+def main(entity_path, output_dir, hash_dir):
+    # Ensure the hash directory exists before proceeding
+    Path(hash_dir).mkdir(parents=True, exist_ok=True)
+
     datasets = get_geography_datasets(entity_path)
     if datasets is None:
         print(f"{LOG_INIT}: No datasets found: {entity_path}", flush=True)
@@ -245,9 +273,20 @@ def main(entity_path, output_dir):
         print(f"{LOG_INIT} ERROR processing create_geojson_from_wkt", flush=True)
         exit(1)
 
-    for d in datasets:
-        build_tiles(entity_path, output_dir, d)
+    current_hash = get_current_sqlite_hash(entity_path)
+    hash_path = Path(hash_dir) / f"{Path(entity_path).stem}.json"
+    stored_hash = get_stored_hash(hash_path)
+
+    if current_hash != stored_hash:
+        for d in datasets:
+            build_tiles(entity_path, output_dir, d)
+        update_current_sqlite_hash(hash_path, current_hash)
+    else:
+        print(f"{LOG_INIT} No changes detected. Skipping tile update.", flush=True)
 
 
 if __name__ == "__main__":
+    # Create the hash directory before invoking the main function
+    hash_dir = Path("var/cache/hashes/")
+    hash_dir.mkdir(parents=True, exist_ok=True)
     main()
