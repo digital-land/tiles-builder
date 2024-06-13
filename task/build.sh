@@ -43,14 +43,17 @@ fi
 
 mkdir -p /mnt/tiles/temporary/$DATABASE_NAME
 echo "$EVENT_ID: building tiles"
-python3 build_tiles.py --entity-path $DATABASE_NAME.sqlite3 --output-dir /mnt/tiles/temporary/$DATABASE_NAME && echo "$EVENT_ID: tiles built successfully"
-echo "$EVENT_ID: finished building tiles"
-rm -rf /mnt/tiles/$DATABASE_NAME.mbtiles
-rm -rf /mnt/tiles/$DATABASE_NAME.geojson
+PYTHON_OUTPUT=$(python3 build_tiles.py --entity-path $DATABASE_NAME.sqlite3 --output-dir /mnt/tiles/temporary/$DATABASE_NAME --hash-dir /mnt/tiles/dataset/hashes)
 
-mv /mnt/tiles/temporary/$DATABASE_NAME/* /mnt/tiles
-rm -rf /mnt/tiles/temporary/$DATABASE_NAME
+# Check if the Python script indicates that tiles were built successfully
+if echo "$PYTHON_OUTPUT" | grep -q "Tiles built successfully*"; then
+  echo "$EVENT_ID: finished building tiles"
+  rm -rf /mnt/tiles/$DATABASE_NAME.mbtiles
+  rm -rf /mnt/tiles/$DATABASE_NAME.geojson
 
-echo "$EVENT_ID: tile files swapped out"
-date +%s >/mnt/tiles/updated
-rm "/mnt/tiles/lock-$DATABASE_NAME"
+  mv /mnt/tiles/temporary/$DATABASE_NAME/* /mnt/tiles
+  rm -rf /mnt/tiles/temporary/$DATABASE_NAME
+
+  echo "$EVENT_ID: tile files swapped out"
+  date +%s >/mnt/tiles/updated
+  rm "/mnt/tiles/lock-$DATABASE_NAME"
