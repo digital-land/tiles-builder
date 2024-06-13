@@ -57,3 +57,6 @@ if echo "$PYTHON_OUTPUT" | grep -q "Tiles built successfully*"; then
   echo "$EVENT_ID: tile files swapped out"
   date +%s >/mnt/tiles/updated
   rm "/mnt/tiles/lock-$DATABASE_NAME"
+else
+ echo "$PYTHON_OUTPUT"
+fi
