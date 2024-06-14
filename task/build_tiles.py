@@ -10,8 +10,10 @@ from contextlib import contextmanager
 import datetime
 import hashlib
 import click
+import logging
 
 LOG_INIT = f"{os.getenv('EVENT_ID')}:"
+logger = logging.getLogger(__name__)
 
 
 @contextmanager
@@ -262,7 +264,7 @@ def main(entity_path, output_dir, hash_dir):
     Path(hash_dir).mkdir(parents=True, exist_ok=True)
     datasets = get_geography_datasets(entity_path)
     if datasets is None:
-        print(f"{LOG_INIT}: No datasets found: {entity_path}", flush=True)
+        logger.info(f"{LOG_INIT}: No datasets found: {entity_path}", flush=True)
         exit(1)
 
     print(f"{LOG_INIT} found datasets: {datasets}", flush=True)
@@ -270,19 +272,23 @@ def main(entity_path, output_dir, hash_dir):
     current_hash = get_current_sqlite_hash(entity_path)
     hash_path = Path(hash_dir) / f"{Path(entity_path).stem}.json"
     stored_hash = get_stored_hash(hash_path)
-    print("current hash:: ", current_hash)
-    print("sotred_hash: ", stored_hash)
+    logger.info("current hash:: ", current_hash)
+    logger.info("sotred_hash: ", stored_hash)
     if current_hash != stored_hash:
         result = create_geojson_from_wkt(entity_path)
         if not result:
-            print(f"{LOG_INIT} ERROR processing create_geojson_from_wkt", flush=True)
+            logger.info(
+                f"{LOG_INIT} ERROR processing create_geojson_from_wkt", flush=True
+            )
             exit(1)
         for d in datasets:
             build_tiles(entity_path, output_dir, d)
         update_current_sqlite_hash(hash_path, current_hash)
-        print(f"{LOG_INIT} Tiles built successfully (new version).", flush=True)
+        logger.info(f"{LOG_INIT} Tiles built successfully (new version).", flush=True)
     else:
-        print(f"{LOG_INIT} No changes detected. Skipping tile update.", flush=True)
+        logger.info(
+            f"{LOG_INIT} No changes detected. Skipping tile update.", flush=True
+        )
 
 
 if __name__ == "__main__":
