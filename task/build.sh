@@ -13,7 +13,7 @@ fi
 echo "$EVENT_ID: checking lock"
 
 if [ -f "/mnt/tiles/lock-$DATABASE_NAME" ]; then
-  if [[ "$(echo "$(date +%s) - $(cat "/mnt/tiles/lock-$DATABASE_NAME") - 3600" | bc)" -ge "0" ]]; then
+  if [[ "$(echo "$(date +%s) - $(cat "/mnt/tiles/lock-$DATABASE_NAME") - 300" | bc)" -ge "0" ]]; then
     echo "$EVENT_ID: lock-$DATABASE_NAME exists ($(cat "/mnt/tiles/lock-$DATABASE_NAME")) but is stale, resetting"
   else
     echo "$EVENT_ID: lock-$DATABASE_NAME exists ($(cat "/mnt/tiles/lock-$DATABASE_NAME")) and is not stale, exiting"
