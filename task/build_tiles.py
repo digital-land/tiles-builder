@@ -259,7 +259,7 @@ def update_current_sqlite_hash(hash_path, new_hash):
     help="Path to the directory for storing hashes",
 )
 def main(entity_path, output_dir, hash_dir):
-    hash_dir.mkdir(parents=True, exist_ok=True)
+    Path(hash_dir).mkdir(parents=True, exist_ok=True)
     datasets = get_geography_datasets(entity_path)
     if datasets is None:
         print(f"{LOG_INIT}: No datasets found: {entity_path}", flush=True)
@@ -268,7 +268,7 @@ def main(entity_path, output_dir, hash_dir):
     print(f"{LOG_INIT} found datasets: {datasets}", flush=True)
 
     current_hash = get_current_sqlite_hash(entity_path)
-    hash_path = hash_dir / f"{Path(entity_path).stem}.json"
+    hash_path = Path(hash_dir) / f"{Path(entity_path).stem}.json"
     stored_hash = get_stored_hash(hash_path)
     print("current hash:: ", current_hash)
     print("sotred_hash: ", stored_hash)
