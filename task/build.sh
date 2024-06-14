@@ -58,5 +58,6 @@ if echo "$PYTHON_OUTPUT" | grep -q "Tiles built successfully*"; then
   date +%s >/mnt/tiles/updated
   rm "/mnt/tiles/lock-$DATABASE_NAME"
 else
- echo "$PYTHON_OUTPUT"
+  echo "Dataset already exist with same hash"
+  echo "$PYTHON_OUTPUT"
 fi
