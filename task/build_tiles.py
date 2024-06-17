@@ -86,6 +86,7 @@ def create_geojson_from_wkt(entity_model_path):
         while True:
             rows = cur.fetchmany(batch_size)
             if not rows:
+                no_errors = True
                 break
             for row in rows:
                 entity_id = row[0] or None

@@ -47,6 +47,7 @@ PYTHON_OUTPUT=$(python3 build_tiles.py --entity-path $DATABASE_NAME.sqlite3 --ou
 
 # Check if the Python script indicates that tiles were built successfully
 if echo "$PYTHON_OUTPUT" | grep -q "Tiles built successfully*"; then
+  echo "$PYTHON_OUTPUT"
   echo "$EVENT_ID: finished building tiles"
   rm -rf /mnt/tiles/$DATABASE_NAME.mbtiles
   rm -rf /mnt/tiles/$DATABASE_NAME.geojson
@@ -58,6 +59,6 @@ if echo "$PYTHON_OUTPUT" | grep -q "Tiles built successfully*"; then
   date +%s >/mnt/tiles/updated
   rm "/mnt/tiles/lock-$DATABASE_NAME"
 else
-  echo "Dataset already exist with same hash"
   echo "$PYTHON_OUTPUT"
+  echo "No change in dataset hash detected"
 fi
