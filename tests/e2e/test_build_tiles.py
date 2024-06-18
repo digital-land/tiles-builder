@@ -22,6 +22,7 @@ def central_activities_sqlite_path(tmp_path):
 
 def test_main(tmp_path, central_activities_sqlite_path):
     tiles_path = os.path.join(tmp_path, "tiles")
+    hash_dir = os.path.join(tmp_path, "hash")
     os.mkdir(tiles_path)
     runner = CliRunner()
     result = runner.invoke(
@@ -31,6 +32,8 @@ def test_main(tmp_path, central_activities_sqlite_path):
             f"{central_activities_sqlite_path}",
             "--output-dir",
             f"{tiles_path}",
+            "--hash-dir",
+            f"{hash_dir}",
         ],
     )
     logging.warning(os.listdir(tiles_path))
