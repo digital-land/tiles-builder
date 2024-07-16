@@ -4,8 +4,7 @@ services:
     build: .
     user: "${UID}:${GID}"
     environment:
-      S3_BUCKET: production-collection-data
-      S3_KEY: entity-builder/dataset/entity.sqlite3
+      S3_OBJECT_ARN: arn:aws:s3:::production-collection-data/entity-builder/dataset/entity.sqlite3
       EVENT_ID: test-event
       AWS_REGION: eu-west-2
       AWS_DEFAULT_REGION: eu-west-2
