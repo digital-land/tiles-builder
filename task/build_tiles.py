@@ -279,6 +279,7 @@ def update_current_sqlite_hash(hash_path, new_hash):
 )
 def main(entity_path, output_dir, hash_dir, hash_check_enabled=False, hash_generation_enabled=False):
     print(f"{LOG_INIT} hash_check_enabled: {hash_check_enabled}", flush=True)
+    print(f"{LOG_INIT} hash_generation_enabled: {hash_generation_enabled}", flush=True)
 
     Path(hash_dir).mkdir(parents=True, exist_ok=True)
     datasets = get_geography_datasets(entity_path)
