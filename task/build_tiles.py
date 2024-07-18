@@ -287,7 +287,9 @@ def main(entity_path, output_dir, hash_dir, hash_check_enabled=False):
         print(f"{LOG_INIT} No changes detected. Skipping tile update.", flush=True)
         exit(1)
 
+    print("Calling create_geojson_from_wkt", flush=True)
     result = create_geojson_from_wkt(entity_path)
+    print("Called create_geojson_from_wkt", flush=True)
     if not result:
         print(f"{LOG_INIT} ERROR processing create_geojson_from_wkt", flush=True)
         exit(1)
