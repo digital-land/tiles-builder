@@ -258,7 +258,18 @@ def update_current_sqlite_hash(hash_path, new_hash):
     default=Path("var/cache/hashes/"),
     help="Path to the directory for storing hashes",
 )
-def main(entity_path, output_dir, hash_dir):
+@click.option(
+    "--hash-check-enabled",
+    is_flag=True,
+    show_default=True,
+    default=False,
+    help=(
+            "Flag whether a hash check should be performed. Disabling the check can be useful in the scenario "
+            "where a rebuild of tile data is required even when SQLite data has not changed.")
+)
+def main(entity_path, output_dir, hash_dir, hash_check_enabled=False):
+    print(f"{LOG_INIT} hash_check_enabled: {hash_check_enabled}", flush=True)
+
     Path(hash_dir).mkdir(parents=True, exist_ok=True)
     datasets = get_geography_datasets(entity_path)
     if datasets is None:
@@ -267,20 +278,23 @@ def main(entity_path, output_dir, hash_dir):
 
     print(f"{LOG_INIT} found datasets: {datasets}", flush=True)
 
-    current_hash = get_current_sqlite_hash(entity_path)
     hash_path = Path(hash_dir) / f"{Path(entity_path).stem}.json"
     stored_hash = get_stored_hash(hash_path)
-    if current_hash != stored_hash:
-        result = create_geojson_from_wkt(entity_path)
-        if not result:
-            print(f"{LOG_INIT} ERROR processing create_geojson_from_wkt", flush=True)
-            exit(1)
-        for d in datasets:
-            build_tiles(entity_path, output_dir, d)
-        update_current_sqlite_hash(hash_path, current_hash)
-        print(f"{LOG_INIT} Tiles built successfully.", flush=True)
-    else:
+
+    current_hash = get_current_sqlite_hash(entity_path)
+
+    if hash_check_enabled and current_hash == stored_hash:
         print(f"{LOG_INIT} No changes detected. Skipping tile update.", flush=True)
+        exit(1)
+
+    result = create_geojson_from_wkt(entity_path)
+    if not result:
+        print(f"{LOG_INIT} ERROR processing create_geojson_from_wkt", flush=True)
+        exit(1)
+    for d in datasets:
+        build_tiles(entity_path, output_dir, d)
+    update_current_sqlite_hash(hash_path, current_hash)
+    print(f"{LOG_INIT} Tiles built successfully.", flush=True)
 
 
 if __name__ == "__main__":
