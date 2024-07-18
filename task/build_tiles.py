@@ -271,8 +271,8 @@ def main(entity_path, output_dir, hash_dir):
 
     current_hash = get_current_sqlite_hash(entity_path)
 
-    skip_hash_check = os.getenv("SKIP_HASH_CHECK", False)
-    if not skip_hash_check and current_hash == stored_hash:
+    hash_check_enabled = os.getenv("HASH_CHECK_ENABLED", True)
+    if hash_check_enabled and current_hash == stored_hash:
         print(f"{LOG_INIT} No changes detected. Skipping tile update.", flush=True)
         exit(1)
 
