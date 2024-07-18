@@ -238,6 +238,7 @@ def update_current_sqlite_hash(hash_path, new_hash):
         hash_dict = {"hash": new_hash}
         file.write(json.dumps(hash_dict))
 
+
 @click.command()
 @click.option(
     "--entity-path",
@@ -257,7 +258,18 @@ def update_current_sqlite_hash(hash_path, new_hash):
     default=Path("var/cache/hashes/"),
     help="Path to the directory for storing hashes",
 )
-def main(entity_path, output_dir, hash_dir):
+@click.option(
+    "--hash-check-enabled",
+    is_flag=True,
+    show_default=True,
+    default=False,
+    help=(
+            "Flag whether a hash check should be performed. Disabling the check can be useful in the scenario "
+            "where a rebuild of tile data is required even when SQLite data has not changed.")
+)
+def main(entity_path, output_dir, hash_dir, hash_check_enabled=False):
+    print(f"{LOG_INIT} hash_check_enabled: {hash_check_enabled}", flush=True)
+
     Path(hash_dir).mkdir(parents=True, exist_ok=True)
     datasets = get_geography_datasets(entity_path)
     if datasets is None:
@@ -271,7 +283,6 @@ def main(entity_path, output_dir, hash_dir):
 
     current_hash = get_current_sqlite_hash(entity_path)
 
-    hash_check_enabled = os.getenv("HASH_CHECK_ENABLED", True)
     if hash_check_enabled and current_hash == stored_hash:
         print(f"{LOG_INIT} No changes detected. Skipping tile update.", flush=True)
         exit(1)

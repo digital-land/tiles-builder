@@ -50,9 +50,14 @@ else
   echo "$EVENT_ID: did not need to download files"
 fi
 
+echo "HASH_CHECK_ENABLED=$HASH_CHECK_ENABLED"
+if [ "${HASH_CHECK_ENABLED:-true}" == "true" ]; then
+  HASH_CHECK_FLAG="--hash-check-enabled"
+fi
+
 mkdir -p /mnt/tiles/temporary/$DATABASE_NAME
 echo "$EVENT_ID: building tiles"
-PYTHON_OUTPUT=$(python3 build_tiles.py --entity-path $DATABASE_NAME.sqlite3 --output-dir /mnt/tiles/temporary/$DATABASE_NAME --hash-dir /mnt/tiles/dataset/hashes)
+PYTHON_OUTPUT=$(python3 build_tiles.py --entity-path $DATABASE_NAME.sqlite3 --output-dir /mnt/tiles/temporary/$DATABASE_NAME --hash-dir /mnt/tiles/dataset/hashes $HASH_CHECK_FLAG)
 
 # Check if the Python script indicates that tiles were built successfully
 if echo "$PYTHON_OUTPUT" | grep -q "Tiles built successfully*"; then
