@@ -279,9 +279,12 @@ def main(entity_path, output_dir, hash_dir, hash_check_enabled=False):
     print(f"{LOG_INIT} found datasets: {datasets}", flush=True)
 
     hash_path = Path(hash_dir) / f"{Path(entity_path).stem}.json"
+    print(f"hash_path: {hash_path}", flush=True)
     stored_hash = get_stored_hash(hash_path)
+    print(f"stored_hash: {stored_hash}", flush=True)
 
     current_hash = get_current_sqlite_hash(entity_path)
+    print(f"current_hash: {current_hash}", flush=True)
 
     if hash_check_enabled and current_hash == stored_hash:
         print(f"{LOG_INIT} No changes detected. Skipping tile update.", flush=True)
