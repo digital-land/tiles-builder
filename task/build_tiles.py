@@ -238,7 +238,6 @@ def update_current_sqlite_hash(hash_path, new_hash):
         hash_dict = {"hash": new_hash}
         file.write(json.dumps(hash_dict))
 
-
 @click.command()
 @click.option(
     "--entity-path",
@@ -267,20 +266,24 @@ def main(entity_path, output_dir, hash_dir):
 
     print(f"{LOG_INIT} found datasets: {datasets}", flush=True)
 
-    current_hash = get_current_sqlite_hash(entity_path)
     hash_path = Path(hash_dir) / f"{Path(entity_path).stem}.json"
     stored_hash = get_stored_hash(hash_path)
-    if current_hash != stored_hash:
-        result = create_geojson_from_wkt(entity_path)
-        if not result:
-            print(f"{LOG_INIT} ERROR processing create_geojson_from_wkt", flush=True)
-            exit(1)
-        for d in datasets:
-            build_tiles(entity_path, output_dir, d)
-        update_current_sqlite_hash(hash_path, current_hash)
-        print(f"{LOG_INIT} Tiles built successfully.", flush=True)
-    else:
+
+    current_hash = get_current_sqlite_hash(entity_path)
+
+    skip_hash_check = os.getenv("SKIP_HASH_CHECK", False)
+    if not skip_hash_check and current_hash == stored_hash:
         print(f"{LOG_INIT} No changes detected. Skipping tile update.", flush=True)
+        exit(1)
+
+    result = create_geojson_from_wkt(entity_path)
+    if not result:
+        print(f"{LOG_INIT} ERROR processing create_geojson_from_wkt", flush=True)
+        exit(1)
+    for d in datasets:
+        build_tiles(entity_path, output_dir, d)
+    update_current_sqlite_hash(hash_path, current_hash)
+    print(f"{LOG_INIT} Tiles built successfully.", flush=True)
 
 
 if __name__ == "__main__":
