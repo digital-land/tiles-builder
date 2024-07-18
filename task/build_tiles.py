@@ -221,6 +221,7 @@ def build_tiles(entity_path, output_path, dataset):
 
 
 def get_current_sqlite_hash(sqlite_path):
+    print(f"{LOG_INIT} Attempting to get_current_sqlite_hash for sqlite_path={sqlite_path}", flush=True)
     with open(sqlite_path, "rb") as f:
         sqlite_data = f.read()
     return hashlib.md5(sqlite_data).hexdigest()

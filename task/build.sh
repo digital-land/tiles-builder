@@ -55,6 +55,12 @@ if [ "${HASH_CHECK_ENABLED:-true}" == "true" ]; then
   HASH_CHECK_FLAG="--hash-check-enabled"
 fi
 
+echo "Datasets"
+ls -la /mnt/tiles/dataset
+
+echo "Dataset hashes"
+ls -la /mnt/tiles/dataset/hashes
+
 mkdir -p /mnt/tiles/temporary/$DATABASE_NAME
 echo "$EVENT_ID: building tiles"
 PYTHON_OUTPUT=$(python3 build_tiles.py --entity-path $DATABASE_NAME.sqlite3 --output-dir /mnt/tiles/temporary/$DATABASE_NAME --hash-dir /mnt/tiles/dataset/hashes $HASH_CHECK_FLAG)
