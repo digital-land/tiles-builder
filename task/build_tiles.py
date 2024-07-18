@@ -268,7 +268,16 @@ def update_current_sqlite_hash(hash_path, new_hash):
             "Flag whether a hash check should be performed. Disabling the check can be useful in the scenario "
             "where a rebuild of tile data is required even when SQLite data has not changed.")
 )
-def main(entity_path, output_dir, hash_dir, hash_check_enabled=False):
+@click.option(
+    "--hash-generation-enabled",
+    is_flag=True,
+    show_default=True,
+    default=False,
+    help=(
+            "Flag whether a hash should be generated. Disabling the check can be useful in the scenario "
+            "that hash generation is causing any problem.")
+)
+def main(entity_path, output_dir, hash_dir, hash_check_enabled=False, hash_generation_enabled=False):
     print(f"{LOG_INIT} hash_check_enabled: {hash_check_enabled}", flush=True)
 
     Path(hash_dir).mkdir(parents=True, exist_ok=True)
@@ -284,7 +293,7 @@ def main(entity_path, output_dir, hash_dir, hash_check_enabled=False):
     stored_hash = get_stored_hash(hash_path)
     print(f"stored_hash: {stored_hash}", flush=True)
 
-    current_hash = get_current_sqlite_hash(entity_path)
+    current_hash = get_current_sqlite_hash(entity_path) if hash_generation_enabled else None
     print(f"current_hash: {current_hash}", flush=True)
 
     if hash_check_enabled and current_hash == stored_hash:
@@ -299,7 +308,8 @@ def main(entity_path, output_dir, hash_dir, hash_check_enabled=False):
         exit(1)
     for d in datasets:
         build_tiles(entity_path, output_dir, d)
-    update_current_sqlite_hash(hash_path, current_hash)
+    if hash_generation_enabled:
+        update_current_sqlite_hash(hash_path, current_hash)
     print(f"{LOG_INIT} Tiles built successfully.", flush=True)
 
 

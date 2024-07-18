@@ -55,15 +55,14 @@ if [ "${HASH_CHECK_ENABLED:-true}" == "true" ]; then
   HASH_CHECK_FLAG="--hash-check-enabled"
 fi
 
-echo "Datasets"
-ls -la /mnt/tiles/dataset
-
-echo "Dataset hashes"
-ls -la /mnt/tiles/dataset/hashes
+echo "HASH_GENERATION_ENABLED=$HASH_GENERATION_ENABLED"
+if [ "${$HASH_GENERATION_ENABLED:-true}" == "true" ]; then
+  HASH_GENERATION_FLAG="--hash-generation-enabled"
+fi
 
 mkdir -p /mnt/tiles/temporary/$DATABASE_NAME
 echo "$EVENT_ID: building tiles"
-PYTHON_OUTPUT=$(python3 build_tiles.py --entity-path $DATABASE_NAME.sqlite3 --output-dir /mnt/tiles/temporary/$DATABASE_NAME --hash-dir /mnt/tiles/dataset/hashes $HASH_CHECK_FLAG)
+PYTHON_OUTPUT=$(python3 build_tiles.py --entity-path $DATABASE_NAME.sqlite3 --output-dir /mnt/tiles/temporary/$DATABASE_NAME --hash-dir /mnt/tiles/dataset/hashes $HASH_CHECK_FLAG $HASH_GENERATION_FLAG)
 
 # Check if the Python script indicates that tiles were built successfully
 if echo "$PYTHON_OUTPUT" | grep -q "Tiles built successfully*"; then
