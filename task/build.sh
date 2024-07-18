@@ -56,7 +56,7 @@ if [ "${HASH_CHECK_ENABLED:-true}" == "true" ]; then
 fi
 
 echo "HASH_GENERATION_ENABLED=$HASH_GENERATION_ENABLED"
-if [ "${$HASH_GENERATION_ENABLED:-true}" == "true" ]; then
+if [ "${HASH_GENERATION_ENABLED:-true}" == "true" ]; then
   HASH_GENERATION_FLAG="--hash-generation-enabled"
 fi
 
