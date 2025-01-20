@@ -21,10 +21,10 @@ clean:
 
 
 test-integration:
-	python -m pytest tests/integration
+	python -m pytest --cov=task tests/integration
 
 test-e2e:
-	python -m pytest tests/e2e
+	python -m pytest --cov=task tests/e2e
 
 test: test-integration test-e2e
 
